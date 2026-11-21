@@ -397,7 +397,12 @@ def main():
         flag_state[0] = 0.0
     last_launch = 0.0
     last_settings = (interval, cooldown)
-    last_engine_launch = 0.0
+    # None = never launched by this process: the first probe of each boot must
+    # check immediately. time.monotonic() is NOT zero at process start on
+    # Windows (fast-boot QPC offsets of hundreds of seconds were observed
+    # 2026-11-22), so a 0.0 init silently inherits a fake grace window and
+    # can suppress the engine relaunch for up to `grace` seconds after boot.
+    last_engine_launch = None
     last_engine_settings = None
     cycle = 0
     while True:
@@ -429,11 +434,11 @@ def main():
                     last_engine_settings = (guard, backend, eport)
                 if not port_is_up(LEDGER_HOST, eport):
                     now = time.monotonic()
-                    if now - last_engine_launch < grace:
+                    if last_engine_launch is not None and now - last_engine_launch < grace:
                         left = grace - (now - last_engine_launch)
                         log_fn(f"engine down ({backend or '?'}:{eport}) but in launch grace, "
                                f"{left:g}s left; skip relaunch")
-                    elif now - last_engine_launch >= cooldown:
+                    elif last_engine_launch is None or now - last_engine_launch >= cooldown:
                         log_fn(f"ENGINE DOWN: {LEDGER_HOST}:{eport} refused connection "
                                f"-> relaunch ({backend or 'unlabelled'})")
                         launch_engine(ecwd, ecmd, log_fn)

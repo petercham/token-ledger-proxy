@@ -497,6 +497,10 @@ selftest 2026-11-21 转正复跑：monitor 57/57、proxy 45/45、watchdog 16 pas
 
 selftest：watchdog 31/0、proxy 45/45、monitor 57/57、daily_report 15/15（2026-11-22 本机复跑）。
 
+### 2.29 rev17a：引擎看护首查修复 `last_engine_launch` 0.0→None（2026-11-22 · 缺陷修复）
+
+`ledger_watchdog.py` 看护循环：宽限判定 `now - last_engine_launch < grace` 在进程从未拉过引擎时误吞首查——Windows 快开机时 `time.monotonic()` 起点值小（实测开机后仅 ~85s < grace 120s），看门狗上岗后近两分钟不拉引擎。修＝初值 `None` 显式表达"从未拉过"，首查立即放行；仅约束本进程自拉后的窗口。触发场景＝重启实机验证（01:32 开机→01:33:53 反代补岗→01:34:26 引擎补岗→90s 后就绪；断连窗口≈开机至看门狗上岗 1.5 分钟＝用户报"本地后端连不上"的直接归因）。既有集成断言（宽限内抑制/宽限后补拉）不回归＝watchdog 31/0。单文件改动，配置面/探测面/反代面零触碰。
+
 ## 三、如实登记：代码分叉
 
 这套脚本与 5090 工具包里的 `skill-token-ledger/scripts/collector_proxy.py`（母本，260 行）**不是同一份文件**：
