@@ -207,6 +207,277 @@ def read_engine_settings(config_path):
     return (bool(cmd)), backend, cmd, cwd, grace, engine_port
 
 
+# ---- guard_services (rev17c, 2026-11-22): list-driven guards. One entry per
+# guarded service; every relaunch goes through that service's OWN launch
+# script (the human entry point), never through an inline command the watchdog
+# invents itself. config.json:
+#   "guard_services": [
+#     {"name": "comfyui-full",
+#      "port": 20003,
+#      "launch": {"cmd": [<shell>, <flag>, "<abs path to its .bat>"],
+#                 "cwd": "<its dir>"},
+#      "grace_s": 300,          # quiet window after a launch (model loading)
+#      "cooldown_s": 10,        # optional; defaults to global cooldown
+#      "wait_for": 8787,        # optional port that must be up BEFORE the
+#                               # FIRST launch (boot RAM race: never load two
+#                               # big models at once)
+#      "stabilize_s": 60,       # extra settle time after wait_for came up
+#      "wait_timeout_s": 600}   # give up waiting after this long, launch anyway
+#   ]
+# Entries are parsed fresh every cycle (hot-editable config). A broken entry
+# is skipped; a broken list never disturbs the proxy or engine guards. Probes
+# use the same raw TCP connect as 8080, so HTTP_PROXY cannot fake a verdict.
+
+DEFAULT_SVC_GRACE_S = 120.0
+DEFAULT_SVC_STABILIZE_S = 0.0
+DEFAULT_SVC_WAIT_TIMEOUT_S = 600.0
+MIN_SVC_S = 0.0
+MAX_SVC_S = 3600.0
+
+
+def _bounded_range(value, fallback, lo, hi):
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    if not lo <= v <= hi:
+        return fallback
+    return v
+
+
+def read_guard_services(config_path):
+    """Parse config.json "guard_services" into validated entries.
+
+    Returns a list of dicts {name, port, cmd, cwd, grace_s, cooldown_s,
+    wait_for, stabilize_s, wait_timeout_s}. Missing/broken pieces drop the
+    single entry (or the whole list), never an exception.
+    """
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return []
+    if not isinstance(cfg, dict):
+        return []
+    raw = cfg.get("guard_services")
+    if not isinstance(raw, list):
+        return []
+    config_dir = os.path.dirname(os.path.abspath(config_path))
+    out = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "").strip()
+        port = item.get("port")
+        launch = item.get("launch")
+        if not name or not isinstance(port, int) or not 1 <= port <= 65535:
+            continue
+        argv = None
+        run_cwd = ""
+        if isinstance(launch, dict):
+            raw_argv = launch.get("cmd")
+            if (isinstance(raw_argv, list) and raw_argv
+                    and all(isinstance(t, str) and t.strip() for t in raw_argv)):
+                argv = list(raw_argv)
+            raw_run = launch.get("cwd")
+            if isinstance(raw_run, str) and raw_run.strip():
+                try:
+                    from paths import expand_path
+                    run_cwd = expand_path(raw_run, config_dir)
+                except Exception:
+                    run_cwd = ""
+        if not argv:
+            continue
+        cooldown = item.get("cooldown_s")
+        wait_for = item.get("wait_for")
+        out.append({
+            "name": name,
+            "port": port,
+            "cmd": argv,
+            "cwd": run_cwd,
+            "grace_s": _bounded_range(item.get("grace_s", DEFAULT_SVC_GRACE_S),
+                                      DEFAULT_SVC_GRACE_S, 1.0, MAX_SVC_S),
+            "cooldown_s": (_bounded_range(cooldown, None, 1.0, MAX_S)
+                           if cooldown is not None else None),
+            "wait_for": (wait_for if isinstance(wait_for, int)
+                         and 1 <= wait_for <= 65535 else None),
+            "stabilize_s": _bounded_range(
+                item.get("stabilize_s", DEFAULT_SVC_STABILIZE_S),
+                DEFAULT_SVC_STABILIZE_S, MIN_SVC_S, MAX_SVC_S),
+            "wait_timeout_s": _bounded_range(
+                item.get("wait_timeout_s", DEFAULT_SVC_WAIT_TIMEOUT_S),
+                DEFAULT_SVC_WAIT_TIMEOUT_S, 1.0, MAX_SVC_S),
+        })
+    return out
+
+def read_proxy_launch(config_path):
+    """Optional config key "proxy_launch": relaunch the 8080 proxy through a
+    script (start-proxy.bat) instead of calling collector_proxy.py directly,
+    so the watchdog and a human use the exact same entry point.
+    {"cmd": [...], "cwd": "..."}; absent/broken -> None -> classic direct
+    launch (byte-identical pre-rev17c default).
+    """
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+    launch = cfg.get("proxy_launch") if isinstance(cfg, dict) else None
+    if isinstance(launch, dict):
+        raw_argv = launch.get("cmd")
+        if (isinstance(raw_argv, list) and raw_argv
+                and all(isinstance(t, str) and t.strip() for t in raw_argv)):
+            run_cwd = ""
+            raw_run = launch.get("cwd")
+            if isinstance(raw_run, str) and raw_run.strip():
+                try:
+                    from paths import expand_path
+                    run_cwd = expand_path(
+                        raw_run, os.path.dirname(os.path.abspath(config_path)))
+                except Exception:
+                    run_cwd = ""
+            return {"cmd": list(raw_argv), "cwd": run_cwd}
+    return None
+
+def launch_guarded(svc, log_fn):
+    """Start one guarded service through its OWN launch script, detached.
+
+    Same discipline as the proxy/engine guards: it is our child, its console
+    output goes to guard-<name>.log, and nothing here can block the loop.
+    """
+    safe = "".join(c if (c.isalnum() or c in "-_.") else "_"
+                   for c in svc["name"])
+    child_log = os.path.join(os.path.dirname(LOG_PATH) or ".",
+                             "guard-%s.log" % safe)
+    logf = open(child_log, "a", encoding="utf-8")
+    popen_kwargs = {
+        "cwd": svc["cwd"] or HERE,
+        "stdin": subprocess.DEVNULL,
+        "stdout": logf,
+        "stderr": subprocess.STDOUT,
+        "close_fds": True,
+    }
+    if os.name == "nt":
+        popen_kwargs["creationflags"] = (_DETACHED_PROCESS
+                                         | _CREATE_NEW_PROCESS_GROUP)
+    else:
+        popen_kwargs["start_new_session"] = True
+    proc = subprocess.Popen(svc["cmd"], **popen_kwargs)
+    logf.close()
+    log_fn("guard[%s] relaunch issued: pid=%d svc=%r"
+           % (svc["name"], proc.pid, svc["cmd"]))
+    return proc
+
+def child_alive(proc):
+    """True while a process WE launched is still running.
+
+    A slow loader (6-slot engine, ComfyUI cold start) keeps its port closed
+    for minutes; launching it again because the grace expired is what used
+    to put two model copies in RAM at once.
+    """
+    try:
+        return proc is not None and proc.poll() is None
+    except Exception:
+        return False
+
+
+def _due(holder, key, now, every):
+    slot = "log_" + key
+    if now - holder.get(slot, 0.0) >= every:
+        holder[slot] = now
+        return True
+    return False
+
+
+def guard_cycle(services, states, log_fn, cooldown, now, gens=None):
+    """One probe/relaunch pass over all guard_services entries.
+
+    rev17f rules:
+      * a child we launched that is still ALIVE but has not opened its port
+        yet is never launched twice (the port opens when loading finishes);
+      * the RAM steady-state gate is keyed on DEPENDENCY GENERATION, not on
+        "first launch". Whenever the watchdog relaunches a dependency (the
+        engine on 8787, the proxy on 8080, or another guarded service), that
+        port's generation moves forward. A service whose synced generation is
+        behind must wait for the dependency to come up AND stay stable for
+        stabilize_s before it starts - so "both backends died and were
+        restarted together" still gets the ordered, non-competing start and
+        ComfyUI only comes up after the LLM backend has reached steady state;
+      * a dependency that never comes up HOLDS by default
+        (dep_timeout_action=launch opts back into launching anyway).
+    """
+    if gens is None:
+        gens = {}
+    for svc in services:
+        st = states.setdefault(svc["name"], {"last_launch": None,
+                                             "dep_met_at": None,
+                                             "waiting_since": None,
+                                             "gen_pending": None,
+                                             "synced_gen": None,
+                                             "proc": None})
+        if port_is_up(LEDGER_HOST, svc["port"]):
+            st["proc"] = None
+            continue
+        cd = svc["cooldown_s"] if svc["cooldown_s"] is not None else cooldown
+        # ---- dependency-generation gate: RAM race guard ----
+        dep_port = svc["wait_for"]
+        if dep_port:
+            dep_gen = gens.get(dep_port, 0)
+            if st["synced_gen"] != dep_gen:
+                if st["gen_pending"] != dep_gen:
+                    st["gen_pending"] = dep_gen
+                    st["dep_met_at"] = None
+                    st["waiting_since"] = now
+                if st["dep_met_at"] is None:
+                    if port_is_up(LEDGER_HOST, dep_port):
+                        st["dep_met_at"] = now
+                        log_fn("guard[%s]: dep %d up (gen %d); stabilize "
+                               "%.0fs before launch"
+                               % (svc["name"], dep_port, dep_gen,
+                                  svc["stabilize_s"]))
+                        continue
+                    if now - st["waiting_since"] >= svc["wait_timeout_s"]:
+                        if svc.get("dep_timeout_action") == "launch":
+                            if _due(st, "dep", now, 120):
+                                log_fn("guard[%s]: dep %d still down after "
+                                       "%.0fs - launching anyway "
+                                       "(dep_timeout_action=launch)"
+                                       % (svc["name"], dep_port,
+                                          svc["wait_timeout_s"]))
+                        else:
+                            if _due(st, "dep", now, 120):
+                                log_fn("guard[%s]: dep %d still down after "
+                                       "%.0fs - holding (dependency first, "
+                                       "RAM race guard); set "
+                                       "dep_timeout_action=launch to override"
+                                       % (svc["name"], dep_port,
+                                          svc["wait_timeout_s"]))
+                            continue
+                    else:
+                        continue
+                elif now - st["dep_met_at"] < svc["stabilize_s"]:
+                    continue
+                else:
+                    st["synced_gen"] = dep_gen
+        # ---- never double-launch a child that is still loading ----
+        if child_alive(st.get("proc")):
+            if _due(st, "alive", now, 60):
+                log_fn("guard[%s]: port %d still closed but our child pid=%d "
+                       "is alive (loading); skip relaunch"
+                       % (svc["name"], svc["port"], st["proc"].pid))
+            continue
+        if st["last_launch"] is None or now - st["last_launch"] >= cd:
+            log_fn("GUARD DOWN: %s:%d (%s) refused connection -> relaunch "
+                   "via its launch script"
+                   % (LEDGER_HOST, svc["port"], svc["name"]))
+            st["proc"] = launch_guarded(svc, log_fn)
+            st["last_launch"] = now
+            gens[svc["port"]] = gens.get(svc["port"], 0) + 1
+        else:
+            log_fn("GUARD DOWN: %s:%d (%s) still down; relaunch in cooldown, "
+                   "skip" % (LEDGER_HOST, svc["port"], svc["name"]))
+
+
 def port_is_up(host, port, timeout=PROBE_TIMEOUT_S):
     """Return True when a raw TCP connect to host:port succeeds.
 
@@ -267,8 +538,13 @@ def launch_ledger(args, log_fn):
     fake service on a temporary port. sys.executable is the interpreter running
     this watchdog, which is correct on every OS and survives Python upgrades.
     """
-    cmd = (split_cmd(args.launch_cmd) if args.launch_cmd
-           else [sys.executable, resolve_collector(args.config), "--config", args.config])
+    if args.launch_cmd:
+        cmd = split_cmd(args.launch_cmd)
+    else:
+        via_script = read_proxy_launch(args.config)
+        cmd = (via_script["cmd"] if via_script
+               else [sys.executable, resolve_collector(args.config),
+                     "--config", args.config])
     log_path = args.log or LOG_PATH
     # The child's console output gets its own file. Sharing the watchdog log
     # meant every client that aborted mid-request made socketserver dump a
@@ -388,6 +664,14 @@ def main():
                f"probe={LEDGER_HOST}:{eport0} (from upstream); grace={grace0:g}s")
     else:
         log_fn("engine guard off (guard_engine not true in config)")
+    services0 = read_guard_services(args.config)
+    states = {}
+    last_guard_names = None
+    if services0:
+        log_fn("guard_services: " + ", ".join(
+            "%s:%d" % (s["name"], s["port"]) for s in services0))
+        if read_proxy_launch(args.config):
+            log_fn("proxy relaunch route: via its launch script (proxy_launch)")
     os.makedirs(os.path.dirname(args.config), exist_ok=True)
 
     flag_state = [None]
@@ -403,7 +687,12 @@ def main():
     # 2026-11-22), so a 0.0 init silently inherits a fake grace window and
     # can suppress the engine relaunch for up to `grace` seconds after boot.
     last_engine_launch = None
+    last_engine_proc = None
+    engine_alive_log = {}
     last_engine_settings = None
+    # port -> how many times the watchdog relaunched whatever
+    # serves it. Guarded services must be re-synced after a bump.
+    port_gens = {}
     cycle = 0
     while True:
         interval, cooldown = read_settings(args.config)
@@ -420,11 +709,12 @@ def main():
                     log_fn(f"DOWN: {LEDGER_HOST}:{args.port} refused connection -> relaunch ledger")
                     launch_ledger(args, log_fn)
                     last_launch = now
+                    port_gens[args.port] = port_gens.get(args.port, 0) + 1
                 else:
                     log_fn(f"DOWN: {LEDGER_HOST}:{args.port} still down; relaunch in cooldown, skip")
         except Exception:
             log_fn(f"watchdog loop ERROR: {traceback.format_exc()}")
-        # ---- engine guard (rev17; default off = nothing below ever runs) ----
+        # ---- engine guard (rev17d; default off = nothing below ever runs) ----
         try:
             guard, backend, ecmd, ecwd, grace, eport = read_engine_settings(args.config)
             if guard and ecmd:
@@ -434,20 +724,41 @@ def main():
                     last_engine_settings = (guard, backend, eport)
                 if not port_is_up(LEDGER_HOST, eport):
                     now = time.monotonic()
-                    if last_engine_launch is not None and now - last_engine_launch < grace:
+                    if child_alive(last_engine_proc):
+                        if _due(engine_alive_log, "engine", now, 60):
+                            log_fn(f"engine down ({backend or '?'}:{eport}) but our "
+                                   f"child pid={last_engine_proc.pid} is alive and "
+                                   f"still loading; skip relaunch")
+                    elif last_engine_launch is not None and now - last_engine_launch < grace:
                         left = grace - (now - last_engine_launch)
-                        log_fn(f"engine down ({backend or '?'}:{eport}) but in launch grace, "
-                               f"{left:g}s left; skip relaunch")
+                        log_fn(f"engine down ({backend or '?'}:{eport}) but in launch "
+                               f"grace, {left:g}s left; skip relaunch")
                     elif last_engine_launch is None or now - last_engine_launch >= cooldown:
                         log_fn(f"ENGINE DOWN: {LEDGER_HOST}:{eport} refused connection "
                                f"-> relaunch ({backend or 'unlabelled'})")
-                        launch_engine(ecwd, ecmd, log_fn)
+                        last_engine_proc = launch_engine(ecwd, ecmd, log_fn)
                         last_engine_launch = now
+                        port_gens[eport] = port_gens.get(eport, 0) + 1
                     else:
                         log_fn(f"ENGINE DOWN: {LEDGER_HOST}:{eport} still down; "
                                f"relaunch in cooldown, skip")
         except Exception:
             log_fn(f"engine guard ERROR: {traceback.format_exc()}")
+        # ---- guard_services (rev17c): every entry probed and relaunched
+        # through its OWN launch script; config read fresh every cycle ----
+        try:
+            services = read_guard_services(args.config)
+            names = [(s["name"], s["port"]) for s in services]
+            if names != last_guard_names:
+                if last_guard_names is not None:
+                    log_fn("guard_services reloaded: " + ", ".join(
+                        "%s:%d" % (n, p) for n, p in names))
+                last_guard_names = names
+            if services:
+                guard_cycle(services, states, log_fn, cooldown,
+                            time.monotonic(), port_gens)
+        except Exception:
+            log_fn(f"guard_services ERROR: {traceback.format_exc()}")
         cycle += 1
         if args.cycles and cycle >= args.cycles:
             log_fn(f"selftest: {cycle} cycles done, exiting")

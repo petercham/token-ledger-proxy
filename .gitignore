@@ -8,3 +8,8 @@ relaunch-now.flag
 run-ledger-watchdog.bat
 __pycache__/
 *.pyc
+
+# scratch work areas per ticket (dev-discipline 8)
+.scratch/
+*.bak-*
+.workbuddy/

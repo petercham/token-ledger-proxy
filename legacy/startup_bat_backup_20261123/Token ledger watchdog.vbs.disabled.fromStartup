@@ -1,0 +1,9 @@
+' Token ledger (GitHub token-ledger-proxy, origin/main 921fb37 = rev16 + 2026-11-21 rename) - auto-start at logon.
+' Replaces the old "Strata ledger watchdog.vbs" (skills-dir chain, retired 2026-11-21).
+' Starts ONLY the watchdog; the watchdog starts the ledger proxy (package dir
+' C:\Work\LLM\token-ledger-proxy, its config.json owns listen 8080 / upstream 8787).
+' --lock-wait 86400 = hot standby when another watchdog still holds lock 43176,
+' then zero-gap takeover. Use python.exe, never pythonw.exe.
+Set sh = CreateObject("WScript.Shell")
+sh.CurrentDirectory = "C:\Work\LLM\token-ledger-proxy"
+sh.Run """C:\Work\LLM\Strata\terminal\python\python.exe"" ""C:\Work\LLM\token-ledger-proxy\ledger_watchdog.py"" --lock-wait 86400", 0, False
