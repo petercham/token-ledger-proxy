@@ -30,7 +30,7 @@ import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # tests/ -> project root
 PROXY_SCRIPT = os.path.join(HERE, "collector_proxy.py")
 UP_PORT = 18787
 PX_PORT = 18080
