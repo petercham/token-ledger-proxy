@@ -81,7 +81,9 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)              # find paths.py however this module is loaded
 CONFIG_PATH = os.path.join(HERE, "config.json")
-LOG_PATH = os.path.join(HERE, "ledger-watchdog.log")
+LOG_DIR = os.path.join(HERE, "logs")           # rev17h: every log file lives under logs/
+LOG_PATH = os.path.join(LOG_DIR, "ledger-watchdog.log")
+os.makedirs(LOG_DIR, exist_ok=True)
 CHILD_LOG_NAME = "collector-proxy.log"   # the proxy's own console output
 ENGINE_LOG_NAME = "engine-child.log"     # the guarded engine's own console output
 WAKE_FLAG_NAME = "relaunch-now.flag"
