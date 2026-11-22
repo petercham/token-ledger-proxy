@@ -1,0 +1,32 @@
+{
+  "object": "gateway.benchmark_registry",
+  "template_note": "template bench-6x256k-v1 = ops/bench_slots.py --concurrency 6 --chars 787000 --max-tokens 16384, 6 independent sessions, cold engine; reference values are user-accepted baselines, NOT live readings",
+  "entries": [
+    {
+      "template": "bench-6x256k-v1",
+      "hardware": "RTX PRO 5000 72GB / 1344GB-s / 64GB RAM",
+      "model": "qwen3.8-flash-next-iq3_s",
+      "engine": "basalt 0.5.5+00c3209b",
+      "measured_at": "2026-11-22",
+      "decode_agg_tps": 135.2,
+      "decode_slot_median_tps": 68.2,
+      "prefill_agg_tps": 2730,
+      "single_route_decode_tps": 204.3,
+      "source": "logs/bench_prod_6.log (basalt-fork ops)",
+      "status": "user-accepted baseline"
+    },
+    {
+      "template": "bench-6x256k-v1",
+      "hardware": "RTX PRO 5000 72GB / 1344GB-s / 64GB RAM",
+      "model": "qwen3.8-flash-next-iq3_s",
+      "engine": "basalt 0.5.5+00c3209b (post-upgrade run, all 6 routes ran to max_tokens)",
+      "measured_at": "2026-11-23",
+      "decode_agg_tps": 141.6,
+      "decode_slot_median_tps": 51.6,
+      "prefill_agg_tps": 2702,
+      "note": "slot median not comparable to the 11-22 baseline: every route filled 16384 tokens here vs early-stop before; agg/prefill are the comparable figures",
+      "source": "logs/bench_6slot_new_exe_20261123.log",
+      "status": "regression pass, kept as second reference point"
+    }
+  ]
+}

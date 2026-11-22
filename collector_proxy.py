@@ -81,6 +81,7 @@ from paths import expand_path        # rev11a A-2: strata_config path flattening
 CANON_INT = ("prompt", "cached", "new_prompt", "gen")
 BODY_ACCUM_CAP = 32 * 1024 * 1024        # stop keeping the private copy past 32 MiB; relay is unaffected
 GATE_DEFAULTS = (0, 10.0, 600.0)         # (max_inflight, queue_beat_s, gate_wait_s); 0 = gate off
+GATEWAY_VERSION = "rev17i"            # self-reported in /capabilities; bump with each functional change
 # rev11a X-2: FOLLOW_DEFAULTS deleted — the follow default (False) is carried by
 # `c.get("gate_follow") is True` in _gate_params; the poll-seconds key's consumer
 # (the polling thread) is torn out by X-1, so the constant would be dead code.
@@ -413,6 +414,89 @@ def _gate_params(cfg_path):
         wait_s = GATE_DEFAULTS[2]
     _last_limit = limit
     return limit, beat_s, wait_s
+
+
+def _capabilities_payload(handler):
+    """rev17i: GET /capabilities - gateway self-description, symmetric to the
+    split-gateway facade's /v1/capabilities (NAS compute-pool scheduler reads
+    one request to learn who answers, live concurrency, routability, and the
+    measured reference numbers from the versioned benchmark registry).
+    Read-only: every probe is best-effort with a 2s budget, never accounting.
+    """
+    cfg = handler.cfg
+    limit, _beat, _wait = _gate_params(handler.cfg_path)
+    gate_snap = handler.gate.snapshot(limit) if handler.gate is not None else None
+    # engine slot count: the engine's OWN launch config, disclosure only
+    # (gate_follow remains the sole tuning consumer of startup params).
+    slots = None
+    raw_e = cfg.get("engine_launch_config")
+    if raw_e:
+        slots = _strata_parallel_parse(expand_path(raw_e, cfg.get("config_dir")))
+    engine, routable = None, False
+    try:
+        # ProxyHandler({}): a machine-level HTTP_PROXY must never fake this
+        # probe (known 502 forgery trap on this host).
+        opener = urlreq.build_opener(urlreq.ProxyHandler({}))
+        with opener.open(cfg["upstream"].rstrip("/") + "/health", timeout=2) as r:
+            engine = json.loads(r.read().decode("utf-8", "replace"))
+            routable = engine.get("status") == "ok" and bool(engine.get("loaded"))
+    except Exception:
+        pass
+    try:
+        reg = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "benchmark-registry.json")
+        with open(reg, encoding="utf-8-sig") as f:
+            bench = json.load(f)
+    except Exception as e:
+        bench = {"entries": [], "note": "registry unreadable",
+                 "error": repr(e),
+                 "looked_at": os.path.join(
+                     os.path.dirname(os.path.abspath(__file__)),
+                     "benchmark-registry.json")}
+    return {
+        "ok": True,
+        "object": "gateway.capabilities",
+        "gateway": {
+            "kind": "llm-ledger-proxy",
+            "version": GATEWAY_VERSION,
+            "listen": cfg.get("listen", ""),
+            "upstream": cfg.get("upstream"),
+            "endpoints": {
+                "chat": "/v1/chat/completions", "messages": "/v1/messages",
+                "models": "/v1/models", "health": "/health",
+                "metrics": "/metrics (needs engine key)",
+                "monitor": "/monitor", "ext": "/ext.json",
+                "capabilities": "/v1/capabilities",
+            },
+        },
+        "capacity": {
+            "admission_gate": {
+                "enabled": bool(gate_snap and gate_snap["limit"]),
+                "max_concurrency": (gate_snap["limit"]
+                                    if gate_snap and gate_snap["limit"] else None),
+            },
+            "concurrency_model": {
+                "kind": "llm_slot_parallelism",
+                "unit": "decode-slots",
+                "note": "NOT comparable to a video gateway's DiT-instance "
+                        "lane count. One resident model on one GPU serves "
+                        "several requests SIMULTANEOUSLY, one decode slot "
+                        "per request; the hard ceiling is the launch "
+                        "config's parallel value (engine_parallel_slots) "
+                        "and the admission gate only caps below it as a "
+                        "policy. Schedulers must not read slots as "
+                        "independent worker instances.",
+            },
+            "engine_parallel_slots": slots,
+            "concurrency_ceiling": (limit if limit else slots),
+            "queue": ({"inflight": gate_snap["inflight"], "queued": gate_snap["queued"]}
+                      if gate_snap else None),
+            "routable": routable,
+        },
+        "engine_health": engine,
+        "benchmarks": bench,
+        "server_time": int(time.time()),
+    }
 
 
 def key_identity(headers, cfg):
@@ -865,6 +949,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):                     # pass-through: /v1/models, console pages, /metrics, ...
         # Local monitor routes are answered here and never forwarded. "/" is NOT
         # one of them: on 8080 it is the Strata console itself.
+        if self.path.split("?", 1)[0] in ("/capabilities", "/v1/capabilities"):
+            try:
+                body = json.dumps(_capabilities_payload(self)).encode("utf-8")
+            except Exception as e:
+                body = json.dumps({"ok": False, "error": repr(e)}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         local = None
         if _monitor_ext is not None:
             try:
