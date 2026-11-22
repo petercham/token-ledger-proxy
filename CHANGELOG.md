@@ -1,4 +1,9 @@
-# 版本改动登记（CHANGELOG）
+﻿# 版本改动登记（CHANGELOG）
+## rev17i (2026-11-23)
+- GET /capabilities + /v1/capabilities: gateway self-description for NAS compute-pool schedulers, symmetric to the split-gateway facade. Reports gateway version, endpoints, admission gate state (enabled / max_concurrency), engine parallel slots + concurrency_ceiling, live queue, routable flag, engine /health passthrough, and versioned benchmark registry (benchmark-registry.json, template bench-6x256k-v1).
+- Concurrency semantics explicit: LLM decode-slot parallelism, NOT comparable to DiT-instance lane counts.
+- config.json gained engine_launch_config (disclosure only; gate_follow remains the sole tuning consumer).
+
 
 倒序登记本包历次改动。详细逐项改动对照表见 `MANIFEST.md` 第二节；本文件只做人读摘要，不重复展开。
 
