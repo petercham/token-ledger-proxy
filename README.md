@@ -35,7 +35,7 @@ bash start.sh                   # 试跑（Linux/macOS；Windows 用 start.bat�
 
 ## Agent 部署入口
 
-若你是宿主 Agent（WorkBuddy / Claude Code 等），直接按本包根目录的 `SKILL.md` 工序执行，本 README 是给人类的详解；若你是人类读者，继续往下读即可。版本改动见 `CHANGELOG.md`。
+若你是宿主 Agent（WorkBuddy / Claude Code 等），直接按本包根目录的 `INSTALL.md` 工序执行，本 README 是给人类的详解；若你是人类读者，继续往下读即可。版本改动见 `CHANGELOG.md`。
 
 ---
 

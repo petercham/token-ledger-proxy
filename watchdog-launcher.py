@@ -1,8 +1,8 @@
-"""Token Ledger master console entry (rev17c).
+﻿"""Token Ledger master console entry (rev17c).
 
 ONE watchdog covers everything: the 8080 proxy, the 8787 engine (legacy keys)
 and every entry in config.json "guard_services" (ComfyUI full 20003, T/V host
-20004, split facade 20010). Every relaunch goes through that service's own
+20004, split facade 8188). Every relaunch goes through that service's own
 launch script. The comfy_watchdog.py era is over: the list replaced it.
 
 Window behavior (human request 2026-11-22): boot & manual bat both show the

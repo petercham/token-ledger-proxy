@@ -1,12 +1,8 @@
----
-name: token-ledger-deploy
-description: "Strata 用量账本（反代版）部署工序：在任意机器上安装/迁移/修复「按人统计 token 用量 + 自动日报 + 看门狗保活 + 硬件监控」的独立工具包。当用户要在某台机器部署用量账本、迁移旧读日志账本、抱怨账本掉线/要按 API key 归人统计/要每日用量日报时使用。所有路径相对本包根目录表述。"
-agent_created: true
----
-
 # Token 账本部署工序（token-ledger-deploy）
 
-本文件是给宿主 Agent（WorkBuddy / Claude Code 等）看的执行工序。人读详解见同目录 `README.md`，文件来源与改动登记见 `MANIFEST.md`。本包自包含：纯 Python 标准库，无数据库、无第三方依赖，Windows / Linux / macOS 通用。
+本文件是部署工序：人类读者与宿主 Agent（WorkBuddy / Claude Code 等）均可按此执行。
+
+> 本文件**不是** Agent 平台意义上的 skill 包（不依赖任何 Agent 平台环境，也不会被 skill 装载器加载）。它只是仓根的通用安装/部署工序文档，命名与 Strata 官方 `INSTALL.md` 对齐。运行时（反代、看门狗、日报）是纯独立进程，对 Agent 平台零依赖——这个依赖方向是刻意设计，不得逆转。人读详解见同目录 `README.md`，文件来源与改动登记见 `MANIFEST.md`。本包自包含：纯 Python 标准库，无数据库、无第三方依赖，Windows / Linux / macOS 通用。
 
 **核心不变量（不得破坏）**：
 - 看门狗与服务角色无关——**无论反代模式还是旁路模式，采数进程必须挂看门狗**（5 秒巡检、掉了自动补岗）。

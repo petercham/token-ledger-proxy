@@ -1,4 +1,8 @@
 ﻿# 版本改动登记（CHANGELOG）
+## rev17j (2026-11-23)
+- `SKILL.md` → `INSTALL.md`（git rename）：该文件是给任意操作者（人类或宿主 Agent）的仓根部署工序文档，命名与 Strata 官方 INSTALL.md 对齐；原名易被误解为「依赖 Agent 平台环境的通用 skill 工具」。同时摘除 frontmatter（name/description/agent_created——平台 skill 装载器的标志物，本包不发布为平台 skill）。正文开头加声明：本文件不是 skill 包；运行时对 Agent 平台零依赖（依赖方向刻意单向，不得逆转）。
+- `README.md`「Agent 部署入口」节引用同步改名。
+
 ## rev17i (2026-11-23)
 - GET /capabilities + /v1/capabilities: gateway self-description for NAS compute-pool schedulers, symmetric to the split-gateway facade. Reports gateway version, endpoints, admission gate state (enabled / max_concurrency), engine parallel slots + concurrency_ceiling, live queue, routable flag, engine /health passthrough, and versioned benchmark registry (benchmark-registry.json, template bench-6x256k-v1).
 - Concurrency semantics explicit: LLM decode-slot parallelism, NOT comparable to DiT-instance lane counts.
