@@ -676,6 +676,21 @@ def main():
         rec("GET Content-Encoding relayed", r.getheader("Content-Encoding") == "gzip"
             and json.loads(gzip.decompress(z))["models"] == ["fake-model"])
 
+        # 12b. OPS-1123-GWSTATUS: /gateway/status unified-status/v0 (live route)
+        c = conn(); c.request("GET", "/gateway/status")
+        r = c.getresponse(); gs_body = r.read(); c.close()
+        gs = json.loads(gs_body.decode("utf-8"))
+        rec("T-GS:route /gateway/status live shape",
+            r.status == 200
+            and "json" in (r.getheader("Content-Type") or "")
+            and all(k in gs for k in ("schema", "machine_id", "domain", "generated_at", "ports"))
+            and gs.get("schema") == "unified-status/v0"
+            and gs.get("domain") == "llm"
+            and isinstance(gs.get("ports"), list) and len(gs["ports"]) == 1
+            and gs["ports"][0].get("vport") == PX_PORT
+            and "speed_bias" not in gs["ports"][0],
+            "status=%s ports=%s" % (r.status, gs.get("ports")))
+
         # 13. RFC 7235 auth-scheme is case-insensitive: one key stays ONE
         #     identity, and every ledger row keeps its raw 8-hex fingerprint.
         before = len(ledger(tmp))

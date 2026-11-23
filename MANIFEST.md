@@ -510,6 +510,16 @@ selftest：watchdog 31/0、proxy 45/45、monitor 57/57、daily_report 15/15（20
 
 划界：anchor/calibration 行不在本票立行（候官方口径行入池＝T4 侧、覆盖线快照＝OPS-1123-TUNEADVISOR T0 产出）；`/capabilities` 不加 layer 过滤参数（候裁 H-2 按缺省采纳＝T1 零加）；`schema_version` 取值＝整数 2（候裁 H-1 按票面缺省采纳）。
 
+### 2.31 rev17k：`GET /gateway/status` 统一状态面 unified-status/v0（2026-11-23 · OPS-1123-GWSTATUS · 功能新增 · 四套全绿）
+
+| 文件 | 改动 | 为什么 |
+|---|---|---|
+| `collector_proxy.py` | 描述更新：反代＋记账＋日报＋监控之外，新增只读路由 `GET /gateway/status`（unified-status/v0）。新增模块级函数 `_gateway_status_payload`（置于 `_capabilities_payload` 后、`key_identity` 前）＝envelope 五字段（`schema`/`machine_id`/`domain`/`generated_at`/`ports`）＋ports 行契约（`vport`/`engine`/`gpu_bind`/`vram_gb`/`available`/`current_tasks{in_flight,queued}`）；`do_GET` 在 `/capabilities` 分支后插新分支（形制逐字沿 capabilities＝JSON 200＋no-store＋CORS＋异常降级体，只匹配精确路径，永不转发 upstream、零账本行）；`GATEWAY_VERSION` rev17i→rev17k。合成口径：`available = serving − Gate.inflight`（serving＝闸 limit 或引擎启动配置槽位，皆不可得→null；不钳位，超跑如实为负）；gate 读数只经 `Gate.snapshot(limit)` 持锁读面；`machine_id`＝config 可选键，空/缺退 `socket.gethostname()`；`gpu_bind`/`vram_gb`＝config 可选键 `machine_profile` 申报，键/子键缺位→null（不推断）；speed_bias 无档案＝整字段缺席（v1 一律缺席，代码零 registry 读）。`Gate` 类零改动；既有路由零改 | NAS 算力池调度侧一发请求读到本机 LLM 网关身份/容量/在务读数（契约 v0.2 §10·issue petercham/token-ledger-proxy#1 实装项）；新键全可选＝现网 config 零改可跑；零 upstream 流量、零鉴权沿 /health 先例 |
+| `tests/selftest_gateway_status.py`（新增） | import 直调桩套（不起服务、零端口、零账本、零 registry、零 config.json；临时件落 `.scratch/OPS-1123-GWSTATUS/` 套尾清零）：GS-1 envelope 五字段闭集锁／GS-2 ports 行闭集锁＋speed_bias 键缺席锁／GS-3 machine_id 来源锁（申报值与空/缺席退 hostname 两段）／GS-4 available 合成式锁（limit−inflight、超跑负值不钳位、live waiter 计 queued、serving 退引擎槽位、两源皆缺→null）／GS-5 machine_profile＋engine_backend 申报形态＋半截申报 null 形态；18/18 | envelope/行闭集/合成式/来源态的逐条机械回归锁，桩法沿 LOADSWEEP-T1 A-6 先例（import 安全性实证：main() 卫底下、模块级零副作用） |
+| `tests/selftest_proxy.py` | 新增一条在岗用例 `T-GS:route /gateway/status live shape`（挂 stage-one GET 断言组后·真起 throwaway 服务态断 200＋Content-Type json＋五字段在场＋`ports[0].vport`==PX_PORT＋speed_bias 键缺席）；除此零改动，套数 45→46 | 路由挂点必须过真服务（比纯桩进一步＝do_GET 分支插入点在位且既有 /health、/v1/models 回归自证同段照跑） |
+
+回归读数（开工基线 3b11be3 上复跑）：proxy **46/46**、watchdog **RESULT: 31 passed, 0 failed**、monitor **57/57**、daily_report **15/15**、辅套 registry **6/6**（全退出码 0）。禁动面：`config.json`/`config.template.json`/`benchmark-registry.json`/`monitor*`/看门狗/日报/母件票——diff 面＝票面②-1 闭集六文件。候裁四点对齐放行件：H-1＝A-4、H-2＝A-5（在场但 null）、H-3＝A-6（v1 一律缺席）、H-4＝bump 采纳·目标值 rev17k（rev17j 已被 DOCSRENAME 拍占用）。
+
 ## 三、如实登记：代码分叉
 
 这套脚本与 5090 工具包里的 `skill-token-ledger/scripts/collector_proxy.py`（母本，260 行）**不是同一份文件**：
