@@ -10,7 +10,7 @@ EXT-2026-11-23-百工插件面单缺陷-v2（并单：R-1..R-6 承 v1＋R-7/R-8/
 
 ## 字段二：领办域具名
 
-领办域＝百工软件团队专家包维护会话／工作面（本机装配产物面 C:\Users\Work\Users 下不存在他机——见行三实况）。
+领办域＝百工软件团队专家包维护会话／工作面（维护源不在本会话工作面；装配实况见字段二，投递实况见行三）。
 装配登记：bundle_source_repo＝D:/multi-agent-collab-devkits/agent-experts/baigong-software-team（该盘不在本机）；本机维护源＝C:\Work\Projects\baigong-software-experts（仅 v0.1.36 zip 产物·zip 文件内容寻址＝9523f01af68dec9898f3618af18f9dd1418ab7aa·648,636 字节）；装配代次 source_commit＝d2bf66e77fd07b21b4246508dd2471ea6011f5f2／bundle_source_commit＝ee9de871281c9af8dd9c6de4ff591c36a68c11ec。
 
 ## 字段三：效力域声明五行

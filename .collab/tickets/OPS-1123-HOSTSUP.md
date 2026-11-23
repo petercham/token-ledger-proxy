@@ -22,3 +22,5 @@ comfyui 族条目 wait_for 注入引擎端口（8787）+ stabilize≥60s；LLM �
 config.json 每周期重读，改动即时生效。
 
 【跨域工单登记】EXT-2026-11-23-百工插件面单缺陷-v1 已落盘本包 .collab／decisions／EXT-2026-11-23-baigong-plugin-defects-v1.md（八字段形制·钉值当轮现取·状态＝已登记待发投递）。
+
+【跨域工单合并登记】应用户令：网关面 v1＋basalt-fork 面交接件（BAIGONG-defects-basaltfork-20261123.md）合并为 EXT-2026-11-23-百工插件面单缺陷-v2（R-1..R-9·全钉值可解引用·落位 .collab/decisions/）。v1 已标作废。
