@@ -84,6 +84,7 @@ sys.path.insert(0, HERE)              # find paths.py (同目录 gateway/; paths
 CONFIG_PATH = os.path.join(PKG_ROOT, "config.json")
 LOG_DIR = os.path.join(PKG_ROOT, "logs")           # rev17h: every log file lives under logs/
 LOG_PATH = os.path.join(LOG_DIR, "ledger-watchdog.log")
+_CRASH_LOG_PATH = os.path.join(os.path.dirname(LOG_PATH), "watchdog-crash.log")
 os.makedirs(LOG_DIR, exist_ok=True)
 CHILD_LOG_NAME = "collector-proxy.log"   # the proxy's own console output
 ENGINE_LOG_NAME = "engine-child.log"     # the guarded engine's own console output
@@ -494,10 +495,13 @@ def guard_cycle(services, states, log_fn, cooldown, now, gens=None):
                     # was satisfied by whoever booted it. A fresh shift must
                     # NOT owe a retroactive stabilize window (user ruling
                     # 2026-11-24: LLM backend never restarted, no stabilize
-                    # debt). Adopt the generation and go straight to launch.
+                    # debt). Backdate dep_met_at so the stabilize check below
+                    # is already satisfied and we fall straight through to
+                    # launch (first patch reset fields but fell into the
+                    # dep_met_at branch and still owed the window).
                     st["synced_gen"] = dep_gen
                     st["gen_pending"] = None
-                    st["dep_met_at"] = None
+                    st["dep_met_at"] = now - svc["stabilize_s"]
                     st["waiting_since"] = None
                 elif st["gen_pending"] != dep_gen:
                     st["gen_pending"] = dep_gen
@@ -694,6 +698,32 @@ def parse_args():
     return ap.parse_args()
 
 
+def _install_crash_forensics(log_fn):
+    """Never die silently: uncaught exceptions and fatal signals go to the
+    watchdog log BEFORE the process exits (silent deaths 2026-11-23/24 were
+    undiagnosable — log simply stopped mid-sentence with no traceback)."""
+    import faulthandler, sys, threading, traceback
+    def _hook(exc_type, exc, tb):
+        try:
+            log_fn("FATAL uncaught: " + "".join(
+                traceback.format_exception(exc_type, exc, tb)).replace(
+                    "\n", " | ").strip())
+        except Exception:
+            pass
+        sys.__excepthook__(exc_type, exc, tb)
+    sys.excepthook = _hook
+    def _thread_hook(args):
+        _hook(args.exc_type, args.exc_value, args.exc_traceback)
+    if hasattr(threading, "excepthook"):
+        threading.excepthook = _thread_hook
+    try:
+        fh = open(_CRASH_LOG_PATH, "a", encoding="utf-8")
+        faulthandler.enable(file=fh)          # segfault / access violation
+        faulthandler.register(signal.SIGTERM, file=fh, all_threads=True)
+    except Exception:
+        pass
+
+
 def main():
     args = parse_args()
     args.config = os.path.abspath(os.path.expanduser(args.config))
@@ -758,6 +788,8 @@ def main():
         flag_state[0] = 0.0
     last_launch = 0.0
     last_settings = (interval, cooldown)
+    _install_crash_forensics(log_fn)
+    last_beat = time.monotonic()
     # None = never launched by this process: the first probe of each boot must
     # check immediately. time.monotonic() is NOT zero at process start on
     # Windows (fast-boot QPC offsets of hundreds of seconds were observed
@@ -772,6 +804,13 @@ def main():
     port_gens = {}
     cycle = 0
     while True:
+        # Heartbeat: one line every 10 min while healthy. A log gap then
+        # localizes the death time of silent watchdog deaths (2026-11-23/24).
+        if time.monotonic() - last_beat >= 600:
+            last_beat = time.monotonic()
+            log_fn("heartbeat ok: probe %d up, guards=%d, cycle=%d"
+                   % (args.port, len(states),
+                      cycle))
         interval, cooldown = read_settings(args.config)
         if (interval, cooldown) != last_settings:
             log_fn(f"settings reloaded: interval={interval:g}s cooldown={cooldown:g}s")
