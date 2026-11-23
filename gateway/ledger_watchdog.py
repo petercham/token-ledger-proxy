@@ -321,6 +321,12 @@ def _validate_guard_item(item, config_dir):
         # them in logs so every view (console, log, roster line) is consistent.
         "use": (str(item.get("use")) if isinstance(item.get("use"), str)
                 else None),
+        # "role" = what THIS instance is (user ruling 2026-11-24): main /
+        # standby / facade / dit / te-vae-aux ... The nature lives in fields,
+        # never parsed out of the entry name; consumers (NAS, gateways) read
+        # use/role/model directly. Watchdog only echoes them.
+        "role": (str(item.get("role")) if isinstance(item.get("role"), str)
+                 else None),
         "model": (str(item.get("model"))
                   if isinstance(item.get("model"), str) else None),
     }
@@ -832,7 +838,8 @@ def main():
     last_guard_names = None
     if services0:
         log_fn("guard_services: " + ", ".join(
-            "%s:%d[%s%s]" % (s["name"], s["port"], s.get("use") or "-",
+            "%s:%d[%s%s%s]" % (s["name"], s["port"], s.get("use") or "-",
+                              "/" + s["role"] if s.get("role") else "",
                               "/" + s["model"] if s.get("model") else "")
             for s in services0))
         if read_proxy_launch(args.config):
@@ -968,7 +975,8 @@ def main():
             if names != last_guard_names:
                 if last_guard_names is not None:
                     log_fn("guard_services reloaded: " + ", ".join(
-                        "%s:%d[%s]" % (n, p, e.get("use") or "-")
+                        "%s:%d[%s%s]" % (n, p, e.get("use") or "-",
+                                         "/" + e["role"] if e.get("role") else "")
                         for (n, p), e in zip(names, services)))
                 last_guard_names = names
             if services:
