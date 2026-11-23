@@ -38,7 +38,17 @@ def lock_busy(port):
 
 
 def tail_log():
+    """Tail the live log, but watch the lock: if the owner dies, take over.
+
+    Gap found 2026-11-23: the 15:54 console window entered tail mode while
+    pid 18548 still held the lock; 18548 died ~90s later and nothing ever
+    relaunched the watchdog (log silent 15:52->22:03, facade 8188 left down).
+    Tailing must not be blind: poll the lock, exec the real watchdog the
+    moment it frees.
+    """
     print("=== live watchdog log (closing this window does NOT stop it) ===",
+          flush=True)
+    print("=== this window also adopts the watchdog role if the owner dies ===",
           flush=True)
     with open(LOG, "r", encoding="utf-8", errors="replace") as f:
         f.seek(0, os.SEEK_END)
@@ -48,6 +58,11 @@ def tail_log():
                 print(line, end="", flush=True)
             else:
                 time.sleep(0.4)
+            if not lock_busy(LOCK):
+                print("=== lock freed: resident watchdog died -> taking over ===",
+                      flush=True)
+                os.chdir(ROOT)
+                os.execv(PY, [PY, WD, "--lock-wait", "86400"])
 
 
 if __name__ == "__main__":
