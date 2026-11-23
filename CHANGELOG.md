@@ -1,4 +1,9 @@
 ﻿# 版本改动登记（CHANGELOG）
+## registry-contract-v2 (2026-11-23) · OPS-1123-LOADSWEEP-T1（registry 契约扩展 · 不占 rev 号）
+- `benchmark-registry.json`：契约扩展＝顶层 `schema_version: 2`＋`contract_note`（layer 行族语义自述：anchor/map/calibration）；两条既有 `bench-6x256k-v1` 记录迁移为 map 行，尾部追加 `layer`/`template_id`/`model_pack`/`engine_version`/`scalars`(三槽位全 null)/`scalars_note` 六键；全部旧键旧值字节冻结（append-only）。
+- `tests/selftest_registry.py` 入册：schema 校验＋旧值不变锁＋/capabilities 响应结构与透传锁（import 直调桩 handler，不起服务、不触在岗端口），6/6。
+- `/capabilities` 响应结构不变（registry 整包透传）；网关代码 diff＝0 行，`GATEWAY_VERSION` 不动（不占 rev 号）。
+
 ## rev17j (2026-11-23)
 - `SKILL.md` → `INSTALL.md`（git rename）：该文件是给任意操作者（人类或宿主 Agent）的仓根部署工序文档，命名与 Strata 官方 INSTALL.md 对齐；原名易被误解为「依赖 Agent 平台环境的通用 skill 工具」。同时摘除 frontmatter（name/description/agent_created——平台 skill 装载器的标志物，本包不发布为平台 skill）。正文开头加声明：本文件不是 skill 包；运行时对 Agent 平台零依赖（依赖方向刻意单向，不得逆转）。
 - `README.md`「Agent 部署入口」节引用同步改名。

@@ -171,3 +171,59 @@ row families: layer=anchor -> official basalt-bench community-口径 rows (pool 
 - 未实跑面（留施工/QA）：R-5 桩直调首跑（A-6 副作用面）；③-5 比对脚本实跑。判定＝**可施工**，无阻塞点；放行双前置（决策者开 T1 拍板＋主理人程序）满足即开工。
 
 —— 架构席 · OPS-1123-LOADSWEEP-T1 v1 · 开端 HEAD 实测 `f352023`（git -C D:\Projects\token-ledger-proxy rev-parse --short HEAD）· 起草实核居本仓 .collab/ · 2026-11-23
+
+
+---
+
+## 完工回执读数登记（工程师席 append-only · 2026-11-23）
+
+- 开端 HEAD 实跑＝`a6b9f97`（`git rev-parse --short HEAD`；票面 ANCHOR `f352023`＋本票登记 commit，无其他改动，主理人放行件已声明，验收 diff 基线一律 `a6b9f97`）；开工 `git status --porcelain`＝空。
+- 候裁采纳（主理人放行件）：H-1＝整数 `2`（S-1/R-2 照写）；H-2＝零加；H-3＝不 bump（collector_proxy.py 零改动）。
+
+### 写入清单（字节数＋sha256 前→后）
+
+| 文件 | 前 | 后 |
+|---|---|---|
+| `benchmark-registry.json` | 1,453 B / `ee9f8261b0ebe66a4023b638214bc6483b05c7259b163c77ce785c88716fbfb6` | 3,174 B / `0dda1f6cded9ede1f9aa2bbea7af19ba69ae152020ce2d7ee1f826836afe685d` |
+| `tests/selftest_registry.py` | （新建·不存在） | 10,234 B / `f6428eee4e916409b85624dafc4f6d4ae5bd4612276f86539b04fd8583c74a80` |
+| `CHANGELOG.md` | 57,922 B / `eca9dfef74cc469c7d92d00af8ac1c0a6a68b6e0d2a7989406108bbdddfd9dc6` | 58,738 B / `6914dec0640abc9ecd1004cc527db4112fe8bfceb043e90191122c28f725070e` |
+| `MANIFEST.md` | 105,795 B / `5789d9693cb0b55076fc46277f887e24f0a4ffe38ae37f91e7a2255f68958d67` | 107,552 B / `5b1e21d619100c5e94dbc3fa33ce2212a7f96af1995c8ede3a08c8f93af01479` |
+| 本票本体 | 21,530 B / `cd65e2ef9ed8944cd4b56ae61500dbed663adbd29034c9a2f3234d0a613ca4e5` | 本节追加（append-only·登记面不计施工验收 diff 面） |
+
+registry 生成方式＝行级插入（旧行逐字节保留，A-1 尾部追加）；新文件无 BOM＋CRLF 保持、无裸 LF。
+
+### ③八条读数（母本仓根·基线 a6b9f97）
+
+1. `git diff --name-only a6b9f97 | grep -vE '^(benchmark-registry\.json|tests/selftest_registry\.py|CHANGELOG\.md|MANIFEST\.md|\.collab/tickets/OPS-1123-LOADSWEEP-T1\.md)$' | wc -l` ＝ **0** ✅
+2. `python -c "import json,sys; json.load(open('benchmark-registry.json', encoding='utf-8-sig'))"` 退出码 **0** ✅
+3. `python tests/selftest_registry.py` 退出码 **0**，末行 **6/6 PASS**（R-1～R-5 逐名 PASS，输出全文见下节）✅
+4. `git diff a6b9f97 -- collector_proxy.py | wc -l` ＝ **0**；`python tests/selftest_proxy.py` ＝ **45/45 PASS** ✅
+5. `git show a6b9f97:benchmark-registry.json` 导出 .scratch 比对脚本：顶层 `object`/`template_note` 相等＋两条原记录全部旧键旧值逐键相等＝`all old keys/values identical: True`（原键数 11/9）；辅检 `git diff a6b9f97 -- benchmark-registry.json | grep -c '^-[^-]'` ＝ **2**（仅两条 entry 尾行加逗号的结构删行，内容在新增行原样再现，符合票面预期）✅
+6. `git diff --name-only a6b9f97 | grep -cE '(config|watchdog|monitor|daily_report|selftest_proxy|collector_proxy)'` ＝ **0** ✅
+7. 编码守卫 `python -c "raw=open('benchmark-registry.json','rb').read(); assert not raw.startswith(b'\xef\xbb\xbf') and b'\r\n' in raw"` 退出码 **0**（另实测：无裸 LF，字节形态随基线同形）✅
+8. `python -c "import json; e=json.load(open('benchmark-registry.json',encoding='utf-8-sig'))['entries']; print(sum(1 for r in e if r['layer']=='map' and any(v is not None for v in r['scalars'].values())))"` ＝ **0** ✅
+
+### selftest_registry.py 输出全文
+
+```
+PASS  R-1:registry-json-parses  top-level keys: object,template_note,schema_version,contract_note,entries
+PASS  R-2:top-level-contract  object='gateway.benchmark_registry' schema_version=2 contract_note_len=703 template_note=present entries=present
+PASS  R-3:entry-row-schema  2 entries validated
+PASS  R-4:frozen-row-2026-11-22  map row, scalars null
+PASS  R-4:frozen-row-2026-11-23  map row, scalars null
+PASS  R-5:capabilities-shape-and-passthrough  missing=none benchmarks==on-disk-registry:True entries:2/2
+
+6/6 PASS
+```
+
+### .scratch 自查
+
+临时工作物＝`.scratch/OPS-1123-LOADSWEEP-T1/`（registry_base.json 基线导出件＋build_registry.py 生成器＋compare 跑于 stdin），完工前已 `rm -rf` 清零（.scratch 不入 git·未跟踪）。
+
+### 健康账补记（施工实感）
+
+- ③-5 辅检读数 2＝"加逗号"结构删行，即票面预告形态；R-4 常量为最终判据。
+- R-5 import 直调法首跑通过（A-6 副作用面＝无新现副作用；桩探测在不可达端口上由 :443 try/except 消化，全程零引擎流量）。
+- registry 新文件含中文「口径」（contract_note 逐字模板），JSON 内为非 ASCII 原文（与 ensure_ascii=False 一致），文件仍为 UTF-8 无 BOM；消费端 utf-8-sig 读法实读兼容。
+
+—— 工程师席 · OPS-1123-LOADSWEEP-T1 完工回执 · 开工/完工均零 git 写操作（未 add/commit）· 落链归主理人

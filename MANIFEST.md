@@ -501,6 +501,15 @@ selftest：watchdog 31/0、proxy 45/45、monitor 57/57、daily_report 15/15（20
 
 `ledger_watchdog.py` 看护循环：宽限判定 `now - last_engine_launch < grace` 在进程从未拉过引擎时误吞首查——Windows 快开机时 `time.monotonic()` 起点值小（实测开机后仅 ~85s < grace 120s），看门狗上岗后近两分钟不拉引擎。修＝初值 `None` 显式表达"从未拉过"，首查立即放行；仅约束本进程自拉后的窗口。触发场景＝重启实机验证（01:32 开机→01:33:53 反代补岗→01:34:26 引擎补岗→90s 后就绪；断连窗口≈开机至看门狗上岗 1.5 分钟＝用户报"本地后端连不上"的直接归因）。既有集成断言（宽限内抑制/宽限后补拉）不回归＝watchdog 31/0。单文件改动，配置面/探测面/反代面零触碰。
 
+### 2.30 registry 契约 v2：layer 行族＋三标量槽位＋两条 map 迁移（2026-11-23 · OPS-1123-LOADSWEEP-T1 · 不占 rev 号 · 网关代码零改动）
+
+| 文件 | 改动 | 为什么 |
+|---|---|---|
+| `benchmark-registry.json` | 顶层追加 `schema_version: 2`＋`contract_note`（layer 行族语义自述：anchor＝官方社区口径行 / map＝容量扫描行携扫描序列＋三导出标量 / calibration＝专家覆盖线快照）；两条既有记录尾部追加 `layer`/`template_id`/`model_pack`/`engine_version`/`scalars`/`scalars_note` 六键，迁移为 map 行；三标量槽位（`saturation_knee`/`steady_tok_s_per_lane_at_knee`/`prefill_tok_s`）全 null＋缺测实注；全部旧键旧值字节冻结（append-only，无 BOM＋CRLF 字节形态保持） | 母票 OPS-1123-LOADSWEEP T1＝registry 立为汇聚点契约；标量数值无实测来源不得凭空填写；`/capabilities` 对 registry 整包透传（`collector_proxy.py` 零改动、`GATEWAY_VERSION` 不动） |
+| `tests/selftest_registry.py`（新增） | R-1 可解析／R-2 顶层契约在场／R-3 逐行 schema（layer 枚举＋scalars 恰三槽闭集＋null 须有注）／R-4 旧两条逐键常量锁＋map 迁移锁／R-5 import 直调 `_capabilities_payload` 桩 handler（upstream 指必然不可达端口）锁响应结构＋透传；6/6 | 契约变更须有机械回归锁；不起服务、不触在岗 8080/8787、零引擎流量 |
+
+划界：anchor/calibration 行不在本票立行（候官方口径行入池＝T4 侧、覆盖线快照＝OPS-1123-TUNEADVISOR T0 产出）；`/capabilities` 不加 layer 过滤参数（候裁 H-2 按缺省采纳＝T1 零加）；`schema_version` 取值＝整数 2（候裁 H-1 按票面缺省采纳）。
+
 ## 三、如实登记：代码分叉
 
 这套脚本与 5090 工具包里的 `skill-token-ledger/scripts/collector_proxy.py`（母本，260 行）**不是同一份文件**：

@@ -1,6 +1,8 @@
 {
   "object": "gateway.benchmark_registry",
   "template_note": "template bench-6x256k-v1 = ops/bench_slots.py --concurrency 6 --chars 787000 --max-tokens 16384, 6 independent sessions, cold engine; reference values are user-accepted baselines, NOT live readings",
+  "schema_version": 2,
+  "contract_note": "row families: layer=anchor -> official basalt-bench community-口径 rows (pool admission qualification + upgrade drift alarm); layer=map -> capacity sweep rows, carrying a scan series plus three derived scalars (saturation_knee -> admission ceiling; steady_tok_s_per_lane_at_knee -> per-lane queue-experience promise; prefill_tok_s -> long-prompt queue estimate); single reference points are allowed for map rows until T3 sweeps supply series. layer=calibration -> expert coverage-line snapshots (source = TUNEADVISOR T0). Pre-T1 records migrated as map rows: original fields byte-frozen, scalars null until measured. Scalars are comparable only across the same model, pack and fixture (ticket boundary 5).",
   "entries": [
     {
       "template": "bench-6x256k-v1",
@@ -13,7 +15,17 @@
       "prefill_agg_tps": 2730,
       "single_route_decode_tps": 204.3,
       "source": "logs/bench_prod_6.log (basalt-fork ops)",
-      "status": "user-accepted baseline"
+      "status": "user-accepted baseline",
+      "layer": "map",
+      "template_id": "bench-6x256k-v1",
+      "model_pack": "qwen3.8-flash-next-iq3_s",
+      "engine_version": "basalt 0.5.5+00c3209b",
+      "scalars": {
+        "saturation_knee": null,
+        "steady_tok_s_per_lane_at_knee": null,
+        "prefill_tok_s": null
+      },
+      "scalars_note": "pre-T1 reference point: scalars never measured (no sweep series behind this row); raw fields below are the frozen evidence, measured 2026-11-22"
     },
     {
       "template": "bench-6x256k-v1",
@@ -26,7 +38,17 @@
       "prefill_agg_tps": 2702,
       "note": "slot median not comparable to the 11-22 baseline: every route filled 16384 tokens here vs early-stop before; agg/prefill are the comparable figures",
       "source": "logs/bench_6slot_new_exe_20261123.log",
-      "status": "regression pass, kept as second reference point"
+      "status": "regression pass, kept as second reference point",
+      "layer": "map",
+      "template_id": "bench-6x256k-v1",
+      "model_pack": "qwen3.8-flash-next-iq3_s",
+      "engine_version": "basalt 0.5.5+00c3209b",
+      "scalars": {
+        "saturation_knee": null,
+        "steady_tok_s_per_lane_at_knee": null,
+        "prefill_tok_s": null
+      },
+      "scalars_note": "pre-T1 reference point: scalars never measured; frozen evidence, measured 2026-11-23; comparability per this row's own note (agg/prefill comparable, slot median not)"
     }
   ]
 }
