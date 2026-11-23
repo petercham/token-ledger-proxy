@@ -10,4 +10,4 @@ PY="${PYTHON:-python3}"
 "$PY" bootstrap.py --init
 "$PY" bootstrap.py --check
 echo "启动守护进程……（仅交互式试跑：Ctrl+C 或关掉终端即结束；长期运行必须装 service-examples 自启件）"
-exec "$PY" ledger_watchdog.py
+exec "$PY" gateway/ledger_watchdog.py

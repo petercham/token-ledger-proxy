@@ -7,7 +7,7 @@ set "PY=C:\Work\LLM\Strata\terminal\python\python.exe"
 if not exist "%PY%" set "PY=python"
 cd /d "%~dp0"
 echo [start-proxy] proxy on 8080
-"%PY%" collector_proxy.py --config "%~dp0config.json"
+"%PY%" gateway\collector_proxy.py --config "%~dp0config.json"
 if "%~1"=="--no-pause" exit /b %ERRORLEVEL%
 echo [start-proxy] proxy exited. Window stays open so you can read errors.
 pause

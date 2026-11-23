@@ -46,7 +46,7 @@
 3. **日报生成时间** —— `report_hour` / `report_minute`，建议 `0` / `0`（即 00:00）。
 4. **是否归人**；要归人则请人类提供各成员 key 并逐个实算指纹：
    ```
-   python collector_proxy.py --fp <该成员的key>
+   python gateway/collector_proxy.py --fp <该成员的key>
    ```
    - 提醒人类：`--fp` 算的是**裸 key**，不要把 `Bearer ` 前缀算进去（会算出完全不同的指纹）。
    - 把结果填进 `config.json` 的 `key_labels`（形如 `{ "01234567": "张三", "abcdef01": "李四" }`，指纹须 8 位小写十六进制）。
@@ -70,7 +70,7 @@
 
    VBS 按自身所在目录找 `ledger_watchdog.py`，所以**不能把 VBS 复制进启动夹**（目录会变成启动夹、主程序找不到且不报错）；快捷方式不改变脚本真实路径。Windows 的 Python 若不在 PATH，设用户环境变量 `TOKEN_LEDGER_PYTHON` 指向 `python.exe` 全路径。
 
-   启动逻辑只有一条：**先起看门狗，由看门狗把服务拉起来**；绝不在启动脚本里直接 `python collector_proxy.py`。
+   启动逻辑只有一条：**先起看门狗，由看门狗把服务拉起来**；绝不在启动脚本里直接 `python gateway/collector_proxy.py`。
 7. **验收**：按下面「验收判据清单」逐条走一遍，其中在岗确认用 `python switch_proxy.py --check`（只读）。
 8. **旧链迁移纪律（从读日志旧链切过来时）**：**并排跑，不要一刀切**——旧链不动，本工具先用临时端口起来跑几天；确认按人统计、日报、监控页都对后，需要历史连续就把旧 `requests-*.jsonl` 拷进新 `out_dir`（核心字段两边一致，混着出报表，无需转换）；选无人跑长任务的窗口，先跑 `python switch_proxy.py --check` 通过后再把团队接入地址切到新端口；旧链先留着随时切回，稳定后再停。回滚 = 接入地址指回引擎端口 + 停看门狗和服务，账本不丢。
 
@@ -81,14 +81,14 @@
 3. 用真实接入地址发一轮对话，`data/requests-今天.jsonl` 多一行，`key`（姓名）、`fp`（8 位码）、`prompt`、`gen` 正确。
 4. 发一个流式请求，**第一块数据立刻到达**（不是等生成完才一起出来）。
 5. `http://<本机IP>:<端口>/ext.json` 能看到全部显卡（每张带唯一身份码）；打开 `http://<本机IP>:<端口>/monitor` 能看到卡片，显卡波形按卡的唯一身份绑定。
-6. 日报与网页报表是两条独立命令：`python daily_report.py --config config.json --all` 出 `.md` 日报；`python html_report.py --config config.json --all` 出/刷新网页报表（不自动生成）。
+6. 日报与网页报表是两条独立命令：`python reporting/daily_report.py --config config.json --all` 出 `.md` 日报；`python reporting/html_report.py --config config.json --all` 出/刷新网页报表（不自动生成）。
 7. `python switch_proxy.py --check`：此刻若有人在跑任务，必须显示拒绝。
 8. **脱离会话自检**：装好自启件后关掉启动它的终端/结束启动会话，`/health` 仍 200、`/ext.json` 仍返回数据；任一不可用说明服务还挂在会话上，**不得交付**。
 
 ## 运维与故障
 
 - **看门狗**：每 5 秒巡检端口（`watchdog_interval_s`，改配置每轮重读热生效、不用重启），掉了立刻补岗；换版本时用 `switch_proxy.py` 的「立即补岗」标记让它不等下一轮。
-- **看门狗划界**：本包 `ledger_watchdog.py` 只守护本包记账反代（`listen` 端口）；Strata 官方引擎壳（`terminal/serve/server.py`）自带引擎进程看护，与本包看门狗无关，本包不碰不依赖。不得向用户暗示要跑官方那套看护来保活记账反代。
+- **看门狗划界**：本包 `gateway/ledger_watchdog.py` 只守护本包记账反代（`listen` 端口）；Strata 官方引擎壳（`terminal/serve/server.py`）自带引擎进程看护，与本包看门狗无关，本包不碰不依赖。不得向用户暗示要跑官方那套看护来保活记账反代。
 - **换版本/重启**：只能 `python switch_proxy.py`——它只停旧进程、唤醒看门狗拉新进程，不会自己起服务。**有客户端会话时硬拒绝，`--force` 也不覆盖**；判忙窗口 5 分钟（长生成只在完成时记账，窗口短会误判空闲）。
 - **热生效项（直接改 config.json，不用重启）**：`key_labels`（下一笔生效）、`watchdog_interval_s`（每轮重读）、`listen`（改后用 `switch_proxy.py` 切换进程即跟随）。`lock_port`（默认 43177，反代进程防重复）与 `watchdog_lock_port`（默认 43176，看门狗防重复）必须不同。
 - 未配 `key_labels` 的指纹原样显示 8 位码（便于发现未登记的 key）；引擎关 key 校验且客户端不带 key 会记 `none`，无法归人。
@@ -99,7 +99,7 @@
 
 1. 读 `out_dir/pending-report.txt`（默认 `data/pending-report.txt`）。
 2. 有积压则逐日读 `out_dir/usage-report-YYYY-MM-DD.md` 向用户汇报（聊天只作导读，报告本体在盘上）。
-3. 汇报后执行清账：`python daily_report.py --config config.json --reported <日期,逗号分隔>`
+3. 汇报后执行清账：`python reporting/daily_report.py --config config.json --reported <日期,逗号分隔>`
 4. pending 为空则回「无待报」，**不编造内容**。
 
 日报由服务进程内的日报线程在 `report_hour:report_minute` 自动生成（服务启动时先补查一次），采集与报告层与宿主 Agent 无关——Agent 离线日报照常生成，断线不漏报。

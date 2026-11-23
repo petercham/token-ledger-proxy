@@ -520,6 +520,36 @@ selftest：watchdog 31/0、proxy 45/45、monitor 57/57、daily_report 15/15（20
 
 回归读数（开工基线 3b11be3 上复跑）：proxy **46/46**、watchdog **RESULT: 31 passed, 0 failed**、monitor **57/57**、daily_report **15/15**、辅套 registry **6/6**（全退出码 0）。禁动面：`config.json`/`config.template.json`/`benchmark-registry.json`/`monitor*`/看门狗/日报/母件票——diff 面＝票面②-1 闭集六文件。候裁四点对齐放行件：H-1＝A-4、H-2＝A-5（在场但 null）、H-3＝A-6（v1 一律缺席）、H-4＝bump 采纳·目标值 rev17k（rev17j 已被 DOCSRENAME 拍占用）。
 
+### 2.32 OPS-1123-ROOTLAYOUT-T1：仓根分层迁移——白名单九件＋五区下沉＋引用链随动（2026-11-23 · 纯迁移零功能 diff · 六套套数不变）
+
+仓根收敛白名单九件（H-8 裁①）；19 行映射表照录（17 条 git mv＋2 新建）：
+
+| # | 旧路径 | 新路径 | 方式 |
+|---|---|---|---|
+| 1 | paths.py | gateway/paths.py | git mv |
+| 2 | collector_proxy.py | gateway/collector_proxy.py | git mv |
+| 3 | ledger_watchdog.py | gateway/ledger_watchdog.py | git mv |
+| 4 | switch_proxy.py | gateway/switch_proxy.py | git mv |
+| 5 | watchdog-launcher.py | gateway/watchdog-launcher.py | git mv |
+| 6 | watchdog-console.bat | gateway/watchdog-console.bat | git mv |
+| 7 | monitor_ext.py | monitor/monitor_ext.py | git mv |
+| 8 | ext.js | monitor/ext.js | git mv |
+| 9 | monitor.js | monitor/monitor.js | git mv |
+| 10 | monitor.html | monitor/monitor.html | git mv |
+| 11 | monitor.css | monitor/monitor.css | git mv |
+| 12 | monitor-sprite.svg | monitor/monitor-sprite.svg | git mv |
+| 13 | html_report.py | reporting/html_report.py | git mv |
+| 14 | daily_report.py | reporting/daily_report.py | git mv |
+| 15 | api-price-table.csv | data-defs/api-price-table.csv | git mv（内容零动） |
+| 16 | benchmark-registry.json | data-defs/benchmark-registry.json | git mv（内容零动） |
+| 17 | legacy/README.md | docs/README.md | git mv |
+| 18 | （新建） | docs/STRUCTURE.md | 新建（S-12） |
+| 19 | （新建） | .workbuddy/swb-anchor | 新建（gitignore 域，S-13） |
+
+随动文件行数清单（只改定位/引用行，断言语义零改）：`gateway/paths.py` 2 行（PKG_DIR 上溯＋docstring 补注）；`gateway/ledger_watchdog.py` 锚段 6 行（HERE/PKG_ROOT/CONFIG/LOG 锚改包根，A-1）；`gateway/switch_proxy.py` 锚段 5 行＋fallback `out` 2 行（A-1 同锚）；`gateway/collector_proxy.py` 引导段 3→6 行＋registry 两坐标 2 处＋调度线程 `scripts_dir` 1 行＋注释 1 行（GATEWAY_VERSION 零动）；`monitor/monitor_ext.py` 0 行（S-6 裁零改）；`reporting/daily_report.py` 1 行；`reporting/html_report.py` 1 行＋注释文案 3 处补 `data-defs/`；`bootstrap.py` REQUIRED 16 项补前缀＋sys.path 补 1 行＋--selftest 三套补 `tests/` 前缀（S-16/A-6）；`start.bat` :8／`start.sh` :13／`start-proxy.bat` :10（H-8 裁①留根）各 1 行；`gateway/watchdog-console.bat` 两处补 `\gateway`（GBK 字节面）；`gateway/watchdog-launcher.py` :24 一行（BOM+CRLF 保持）；`service-examples/` 三件各 1-2 行；`config.template.json` :25 comment 串两处；`README.md` 九处／`INSTALL.md` 五处命令前缀随动；`tests/selftest_proxy.py` 1／`selftest_watchdog.py` 1／`selftest_monitor.py` 7／`selftest_daily_report.py` 1／`selftest_registry.py` 2（:29＋:161，放行件勘误口径）／`selftest_gateway_status.py` 1。
+
+回归读数：六套套数锁＝proxy **46/46**、watchdog **RESULT: 31 passed, 0 failed**、monitor **57/57**、daily_report **15/15**、registry **6/6**、gateway_status **18/18**（迁移后不变＝断言零改机检）。`GATEWAY_VERSION` 零 bump。禁动面：两域 `config.json`、`benchmark-registry.json`/`api-price-table.csv` 内容、前端五件字节、在岗 8080/8787、启动夹实装 VBS、`D:\Strata-toolkit\**`。部署面同构迁移＋换载＝人工闸②（H-1/H-2）另呈。
+
 ## 三、如实登记：代码分叉
 
 这套脚本与 5090 工具包里的 `skill-token-ledger/scripts/collector_proxy.py`（母本，260 行）**不是同一份文件**：

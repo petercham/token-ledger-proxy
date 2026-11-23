@@ -5,7 +5,7 @@ Nothing in this package assumes a drive letter, a user name, an OS, or a Python
 version directory. A config file may use these forms for any path field:
 
     @here/data          -> <directory containing the config file>/data
-    @pkg/data           -> <directory containing this package>/data
+    @pkg/data           -> <directory containing this package>/data (= parent of the package's gateway/ dir)
     ~/data              -> <current user's home>/data   (also @home)
     data                -> <directory containing the config file>/data  (relative)
     /absolute/path      -> used as-is (also a drive-letter path on Windows)
@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import os
 
-PKG_DIR = os.path.dirname(os.path.abspath(__file__))
+PKG_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH_FIELDS = ("out_dir", "web_root", "collector_script", "log_dir", "active_log")
 
 

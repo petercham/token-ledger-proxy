@@ -26,7 +26,7 @@ import tempfile
 from types import SimpleNamespace
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # tests/ -> project root
-REGISTRY = os.path.join(HERE, "benchmark-registry.json")
+REGISTRY = os.path.join(HERE, "data-defs", "benchmark-registry.json")
 SCALAR_SLOTS = {"saturation_knee", "steady_tok_s_per_lane_at_knee", "prefill_tok_s"}
 LAYER_ENUM = {"anchor", "map", "calibration"}
 SCHEMA_VERSION_TICKET = 2          # H-1 ruling: integer 2 (ticket S-1 / R-2)
@@ -158,7 +158,7 @@ def main():
     # Import-safe real module (main() under __main__ guard); stub handler has
     # exactly the three attributes _capabilities_payload touches: cfg, cfg_path, gate.
     try:
-        sys.path.insert(0, HERE)
+        sys.path.insert(0, os.path.join(HERE, "gateway"))
         import collector_proxy
 
         # a provably closed loopback port: bind(0) then release before use

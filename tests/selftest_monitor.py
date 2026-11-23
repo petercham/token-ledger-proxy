@@ -206,7 +206,7 @@ try {
 
 def load_module():
     spec = importlib.util.spec_from_file_location("monitor_ext",
-                                                 os.path.join(HERE, "monitor_ext.py"))
+                                                 os.path.join(HERE, "monitor", "monitor_ext.py"))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
@@ -462,10 +462,10 @@ def main():
     rec("cpu_name sampler: stdlib registry (nt) / /proc/cpuinfo (posix), whitespace-collapsed, "
         "64-char cap, empty on any failure -> field omitted",
         getattr(m, "cpu_name", None) is not None
-        and b"ProcessorNameString" in open(os.path.join(HERE, "monitor_ext.py"), "rb").read()
-        and b'"/proc/cpuinfo"' in open(os.path.join(HERE, "monitor_ext.py"), "rb").read()
-        and b'name = " ".join(name.split())' in open(os.path.join(HERE, "monitor_ext.py"), "rb").read()
-        and b'return name[:64]' in open(os.path.join(HERE, "monitor_ext.py"), "rb").read())
+        and b"ProcessorNameString" in open(os.path.join(HERE, "monitor", "monitor_ext.py"), "rb").read()
+        and b'"/proc/cpuinfo"' in open(os.path.join(HERE, "monitor", "monitor_ext.py"), "rb").read()
+        and b'name = " ".join(name.split())' in open(os.path.join(HERE, "monitor", "monitor_ext.py"), "rb").read()
+        and b'return name[:64]' in open(os.path.join(HERE, "monitor", "monitor_ext.py"), "rb").read())
     rec("cpu legend baseline (host hotfix rev7): multi-socket subs led by cpu1/cpu2 "
         "swatch glyphs + subOf(); single-socket sub gets cpu1 glyph + cores/threads or "
         "\u6574\u673a fallback (old setSub threads line gone)",
@@ -510,7 +510,7 @@ def main():
             _t.write(_NODE_SMOKE)
             _hp = _t.name
         try:
-            _r = _sp.run([_node, _hp, os.path.join(HERE, "monitor.js")],
+            _r = _sp.run([_node, _hp, os.path.join(HERE, "monitor", "monitor.js")],
                          capture_output=True, text=True, timeout=30)
             rec("node smoke: monitor.js IIFE + full tick chain run against a DOM "
                 "stub, no ReferenceError/TypeError (SPEED_DECODE incident class)",
@@ -693,7 +693,7 @@ try {
             _t.write(_GATE_SMOKE)
             _gp = _t.name
         try:
-            _gr = _sp.run([_node, _gp, os.path.join(HERE, "monitor.js")],
+            _gr = _sp.run([_node, _gp, os.path.join(HERE, "monitor", "monitor.js")],
                           capture_output=True, text=True, timeout=30)
             _out = _gr.stdout or ""
             _g0 = "G0ABSENT 1" in _out

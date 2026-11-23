@@ -21,7 +21,7 @@ import time
 
 ROOT = r"C:\Work\LLM\token-ledger-proxy"
 PY = r"C:\Work\LLM\Strata\terminal\python\python.exe"
-WD = os.path.join(ROOT, "ledger_watchdog.py")
+WD = os.path.join(ROOT, "gateway", "ledger_watchdog.py")
 LOG = os.path.join(ROOT, "logs", "ledger-watchdog.log")
 LOCK = 43176
 

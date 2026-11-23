@@ -5,7 +5,7 @@ python bootstrap.py --init
 if errorlevel 1 goto :fail
 python bootstrap.py --check
 if errorlevel 1 goto :fail
-start "Token ledger watchdog" /min python ledger_watchdog.py
+start "Token ledger watchdog" /min python gateway\ledger_watchdog.py
 echo 已启动守护进程，由它负责拉起账本服务。
 echo 查看状态： python switch_proxy.py --check
 goto :eof

@@ -1,4 +1,8 @@
 ﻿# 版本改动登记（CHANGELOG）
+## (2026-11-23) · OPS-1123-ROOTLAYOUT-T1 仓根分层迁移
+- 仓根收敛白名单九件（H-8 裁①：`start-proxy.bat` 留根入列），代码与数据下沉 `gateway/` `monitor/` `reporting/` `data-defs/` 五区（17 条 git mv 全 rename 在册）＋全部引用链随动；`docs/STRUCTURE.md`＋`.workbuddy/swb-anchor` 建档收口。
+- **GATEWAY_VERSION 零 bump（rev17k 不动＝无功能变更）**；六套自测套数不变（proxy 46 / watchdog 31 / monitor 57 / daily_report 15 / registry 6 / gateway_status 18）。明细见 MANIFEST 2.32 节。
+
 ## rev17k (2026-11-23) · OPS-1123-GWSTATUS
 - 新增只读路由 `GET /gateway/status`（unified-status/v0·NAS 算力池对接）：envelope 五字段（schema/machine_id/domain/generated_at/ports）＋ports 行契约（vport/engine/gpu_bind/vram_gb/available/current_tasks）；`available = serving − Gate.inflight` 进程内合成（serving＝闸 limit 或引擎启动配置槽位，皆不可得→null）；speed_bias 无档案＝整字段缺席（v1 一律缺席，不填 1.0）；gpu_bind/vram_gb 只认 config 可选键 `machine_profile` 申报，缺位 null（不推断）；machine_id＝config 可选键，空/缺退 `socket.gethostname()`。只读：零 upstream 流量、零账本行、零 gate 事件，沿 /health 无鉴权先例。
 - selftest 两条入册：`tests/selftest_gateway_status.py`（新增·import 直调桩法·GS-1～GS-5·18/18）＋`tests/selftest_proxy.py` 新增在岗用例 `T-GS:route /gateway/status live shape`（45→46）。

@@ -68,7 +68,11 @@ from urllib import error as urlerr
 
 # The monitor extension lives next to this file. Import failure must never stop
 # accounting: the proxy simply keeps forwarding everything to the engine.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))   # gateway/
+_PKG_ROOT = os.path.dirname(_SCRIPT_DIR)
+sys.path.insert(0, _SCRIPT_DIR)                             # 原 :71 语义保持
+sys.path.insert(0, os.path.join(_PKG_ROOT, "monitor"))      # monitor_ext 新家（:73 import 随动）
+sys.path.insert(0, os.path.join(_PKG_ROOT, "reporting"))    # daily_report 新家（调度线程 import 随动）
 try:
     import monitor_ext as _monitor_ext
 except Exception:
@@ -443,7 +447,7 @@ def _capabilities_payload(handler):
     except Exception:
         pass
     try:
-        reg = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+        reg = os.path.join(_PKG_ROOT, "data-defs",
                            "benchmark-registry.json")
         with open(reg, encoding="utf-8-sig") as f:
             bench = json.load(f)
@@ -451,7 +455,7 @@ def _capabilities_payload(handler):
         bench = {"entries": [], "note": "registry unreadable",
                  "error": repr(e),
                  "looked_at": os.path.join(
-                     os.path.dirname(os.path.abspath(__file__)),
+                     _PKG_ROOT, "data-defs",
                      "benchmark-registry.json")}
     return {
         "ok": True,
@@ -1115,7 +1119,7 @@ def _report_scheduler_loop(cfg, out_dir):
     rh = int(cfg.get("report_hour", 0))
     rm = int(cfg.get("report_minute", 0))
     runlog = os.path.join(out_dir, "daily-report.log")
-    scripts_dir = os.path.dirname(os.path.abspath(__file__))
+    scripts_dir = os.path.join(_PKG_ROOT, "reporting")
     if scripts_dir not in sys.path:
         sys.path.insert(0, scripts_dir)
 
@@ -1123,7 +1127,7 @@ def _report_scheduler_loop(cfg, out_dir):
     today = datetime.now().strftime("%Y-%m-%d")
     while True:
         try:
-            import daily_report  # cached after the first pass; lives next to this file
+            import daily_report  # cached after the first pass; lives in reporting/
             now = datetime.now()
             if not boot_done:
                 _fire_daily(daily_report, cfg, runlog, "boot check")

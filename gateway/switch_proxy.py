@@ -41,10 +41,11 @@ import time
 import urllib.request
 from datetime import datetime
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)              # find paths.py however this module is loaded
-CONFIG_PATH = os.path.join(HERE, "config.json")
-WAKE_FLAG = os.path.join(HERE, "relaunch-now.flag")
+HERE = os.path.dirname(os.path.abspath(__file__))          # gateway/
+PKG_ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)              # paths.py 同目录
+CONFIG_PATH = os.path.join(PKG_ROOT, "config.json")
+WAKE_FLAG = os.path.join(PKG_ROOT, "relaunch-now.flag")
 PROXY_PORT = 8080
 WATCHDOG_LOCK_PORT = 43176
 QUIET_WINDOW_S = 300         # a completed request within 5 min = clients are around.
@@ -179,9 +180,9 @@ def ledger_recent():
     # Always look where the config says, not next to this script.
     try:
         from paths import load_config as portable_load_config
-        out = portable_load_config(CONFIG_PATH).get("out_dir") or HERE
+        out = portable_load_config(CONFIG_PATH).get("out_dir") or PKG_ROOT
     except Exception:
-        out = HERE
+        out = PKG_ROOT
     path = os.path.join(out, "requests-%s.jsonl" % day)
     if not os.path.isfile(path):
         return False, None, None

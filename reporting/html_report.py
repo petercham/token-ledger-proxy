@@ -22,7 +22,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # find paths.py however this module is loaded
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gateway"))  # find paths.py (gateway/) however this module is loaded
 
 ESC = H.escape
 ALL = "__all__"
@@ -308,10 +308,10 @@ function th(){var h=document.documentElement,n=h.getAttribute('data-theme')==='d
 if(n==='dark')h.setAttribute('data-theme','dark');else h.removeAttribute('data-theme');
 try{localStorage.setItem('tl-theme',n)}catch(e){}thBtn(n)}
 function thBtn(n){var b=document.getElementById('th-btn');if(b)b.textContent=(n==='dark'?'☀ 浅色':'深色 ◐')}
-/* 省钱计算器：价表=各厂商公开 API 牌价（USD/1M tok），抓取于 2026-11-04，见 api-price-table.csv。
+/* 省钱计算器：价表=各厂商公开 API 牌价（USD/1M tok），抓取于 2026-11-04，见 data-defs/api-price-table.csv。
    计费口径：prompt 中缓存命中部分按各家 cache-hit 价、新算部分按 cache-miss 价、生成 tok 按输出价；
    汇率 ¥7.1/$。各家分词器不同，按本地计数折算有 ±20% 偏差。 */
-/* 排序＝厂商按各家最高输入价从高到低、同厂商模型聚拢且内部按输入价降序（与 api-price-table.csv 一致） */
+/* 排序＝厂商按各家最高输入价从高到低、同厂商模型聚拢且内部按输入价降序（与 data-defs/api-price-table.csv 一致） */
 var TLP=[["OpenAI","GPT-6 Astra",10,1,50],["OpenAI","GPT-5.6 Terra",2,0.2,12],["OpenAI","GPT-6 Sol",2,0.2,10],["Anthropic","Claude Fable 5",10,1,50],["Anthropic","Claude Opus 5.5",4,0.2,20],["Anthropic","Claude Sonnet 5.5",2,0.1,10],["Anthropic","Claude Haiku 5.5",0.1,0.01,0.5],["Moonshot","Kimi K3",2.82,0.28,14.08],["Moonshot","Kimi K3.1 Pro",1.83,0.18,9.58],["Google","Gemini 4 Argon",2,0.1,10],["Google","Gemini 3.8 Flash",0.75,0.075,3.75],["xAI","Grok 4.7",2,0.5,6],["阿里云","Qwen3.8-Max",1.69,1.69,5.07],["阿里云","Qwen3.8-Flash",0.11,0.11,0.38],["DeepSeek","V4-Pro",1.32,0.044,3.96],["DeepSeek","V4.1-Flash",0.3,0.006,1.2],["智谱","GLM-5.3",1.13,0.28,3.94],["智谱","GLM-5.3-Flash",0.11,0.03,0.39],["小米","MiMo-V2.6-Pro",0.435,0.0036,0.87],["小米","MiMo-V2.6-Flash",0.14,0.0028,0.28],["MiniMax","MiniMax-M3",0.3,0.06,1.18],["MiniMax","MiniMax-M3.1-Flash",0.15,0.015,0.6]];
 var CALC=false;
 function calcUI(){document.querySelectorAll('.calc-btn').forEach(function(e){e.textContent=CALC?'关闭计算器':'省钱计算器';e.classList.toggle('on',CALC)});
@@ -334,7 +334,7 @@ o.innerHTML='<div class="sec"><h2>省钱计算器<span class="muted">　按当�
 +rows.map(function(r,i){var vc=r[0]===lastV?'':r[0];lastV=r[0];
 var sep=(i===lastI+1&&i>0)?' style="border-top:2px solid var(--line)"':'';lastI=i;
 return '<tr'+sep+'><td>'+esc(vc)+'</td><td>'+esc(r[1])+'</td><td>'+r[2].toLocaleString('zh-CN',{maximumFractionDigits:2})+'</td><td>'+(r[2]*7.1).toLocaleString('zh-CN',{maximumFractionDigits:0})+'</td><td>'+(100*r[2]/mx).toFixed(1)+'%</td></tr>'}).join('')+'</table>'
-+'<div class="muted">排序＝按各家牌价从高到低，同厂商模型聚拢。口径：prompt 新算 '+fmti(a.pr-a.ca)+' tok 按各家 cache-miss 价、KV 命中 '+fmti(a.ca)+' tok 按 cache-hit 价、生成 '+fmti(a.gen)+' tok 按输出价。汇率 7.1。牌价 2026-11-05 逐家官方页核验（api-price-table.csv 含出处与峰谷/分档备注）；各家分词器差异 ±20%；阿里云未公布缓存命中价，按其输入价计（偏保守）。按当前用量折算最便宜 <b>'+esc(bestName)+'</b> ≈ ¥'+(best*7.1).toFixed(0)+'。</div></div>'}
++'<div class="muted">排序＝按各家牌价从高到低，同厂商模型聚拢。口径：prompt 新算 '+fmti(a.pr-a.ca)+' tok 按各家 cache-miss 价、KV 命中 '+fmti(a.ca)+' tok 按 cache-hit 价、生成 '+fmti(a.gen)+' tok 按输出价。汇率 7.1。牌价 2026-11-05 逐家官方页核验（data-defs/api-price-table.csv 含出处与峰谷/分档备注）；各家分词器差异 ±20%；阿里云未公布缓存命中价，按其输入价计（偏保守）。按当前用量折算最便宜 <b>'+esc(bestName)+'</b> ≈ ¥'+(best*7.1).toFixed(0)+'。</div></div>'}
 function today(){var dd=document.getElementById('tl-day');if(dd)dd.value=anchorD();go()}
 (function init(){var an=anchorD();
 var dd=document.getElementById('tl-day');if(dd){dd.value=an;dd.min=TL_DATA?TL_DATA.days[0]:an;dd.max=an}

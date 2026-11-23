@@ -16,7 +16,7 @@ import statistics
 import sys
 from datetime import datetime, timedelta
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # find paths.py however this module is loaded
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gateway"))  # find paths.py (gateway/) however this module is loaded
 
 
 def load_config(path):
