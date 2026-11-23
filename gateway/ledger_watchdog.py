@@ -314,6 +314,15 @@ def _validate_guard_item(item, config_dir):
         # per-item switch, 0/1 or false/true (user ruling 2026-11-24):
         # off = planned downtime, the watchdog leaves it alone; default ON.
         "enabled": item.get("enabled", 1) not in (0, False, "0", "false", "off"),
+        # unified labels (user ruling 2026-11-24): the SAME vocabulary NAS and
+        # terminals see. "use" = role: llm family -> agent|writer; comfyui
+        # family -> video|image|audio. "model" = the concrete model the backend
+        # actually loads/builds. The watchdog never interprets them; it echoes
+        # them in logs so every view (console, log, roster line) is consistent.
+        "use": (str(item.get("use")) if isinstance(item.get("use"), str)
+                else None),
+        "model": (str(item.get("model"))
+                  if isinstance(item.get("model"), str) else None),
     }
 
 
@@ -823,7 +832,9 @@ def main():
     last_guard_names = None
     if services0:
         log_fn("guard_services: " + ", ".join(
-            "%s:%d" % (s["name"], s["port"]) for s in services0))
+            "%s:%d[%s%s]" % (s["name"], s["port"], s.get("use") or "-",
+                              "/" + s["model"] if s.get("model") else "")
+            for s in services0))
         if read_proxy_launch(args.config):
             log_fn("proxy relaunch route: via its launch script (proxy_launch)")
     os.makedirs(os.path.dirname(args.config), exist_ok=True)
@@ -957,7 +968,8 @@ def main():
             if names != last_guard_names:
                 if last_guard_names is not None:
                     log_fn("guard_services reloaded: " + ", ".join(
-                        "%s:%d" % (n, p) for n, p in names))
+                        "%s:%d[%s]" % (n, p, e.get("use") or "-")
+                        for (n, p), e in zip(names, services)))
                 last_guard_names = names
             if services:
                 guard_cycle(services, states, log_fn, cooldown,
