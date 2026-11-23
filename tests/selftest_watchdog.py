@@ -16,6 +16,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+from datetime import datetime
 import time
 
 # Resolve from this file: works unchanged on Windows / Linux / macOS.
@@ -136,6 +137,34 @@ def main():
     write_cfg(guard_engine=True, engine_launch={"cmd": []})
     g = wd.read_engine_settings(cfg)
     rec("empty cmd -> guard stays off", g[0] is False, str(g[:3]))
+    # engine_suspended (night DiT swap, 2026-11-24)
+    write_cfg(guard_engine=True, upstream="http://127.0.0.1:19099/",
+              engine_launch={"cmd": ["ok"], "cwd": tmp})
+    g = wd.read_engine_settings(cfg)
+    rec("no suspension -> guard on, suspended slot False",
+        g[0] is True and g[6] is False, str(g[6]))
+    write_cfg(guard_engine=True, upstream="http://127.0.0.1:19099/",
+              engine_launch={"cmd": ["ok"], "cwd": tmp},
+              engine_suspended="always")
+    g = wd.read_engine_settings(cfg)
+    rec("engine_suspended=always -> guard off + suspended True",
+        g[0] is False and g[6] is True, str(g))
+    write_cfg(guard_engine=True, upstream="http://127.0.0.1:19099/",
+              engine_launch={"cmd": ["ok"], "cwd": tmp},
+              engine_suspended="night",
+              engine_night_from=datetime.now().hour,
+              engine_night_to=datetime.now().hour)
+    g = wd.read_engine_settings(cfg)
+    rec("night window covering now-hour -> suspended True",
+        g[0] is False and g[6] is True, str(g))
+    write_cfg(guard_engine=True, upstream="http://127.0.0.1:19099/",
+              engine_launch={"cmd": ["ok"], "cwd": tmp},
+              engine_suspended="night",
+              engine_night_from=(datetime.now().hour + 2) % 24,
+              engine_night_to=(datetime.now().hour + 3) % 24)
+    g = wd.read_engine_settings(cfg)
+    rec("night window NOT covering now -> normal guard",
+        g[0] is True and g[6] is False, str(g))
     with open(cfg, "w", encoding="utf-8") as f:
         f.write("{ broken json")
     g = wd.read_engine_settings(cfg)
