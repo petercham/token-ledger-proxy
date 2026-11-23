@@ -50,21 +50,21 @@ ENGINE GUARD (rev17, 2026-11-22): the watchdog can also guard the backend the
 proxy talks to (Strata or Basalt), so ONE startup-folder entry brings up the
 whole chain: watchdog -> ledger proxy + engine. Controlled by config.json keys
 (read fresh every cycle, like the interval — no restart needed to change them):
-  "guard_engine": false        # default OFF: byte-identical pre-rev17 behaviour
   "engine_backend": "basalt"   # "strata" | "basalt" (labelled in the log)
   "engine_launch": {"cmd": [...], "cwd": "..."}   # argv list; cwd optional,
                                # supports @here/@pkg/~ expansion
   "engine_grace_s": 120        # after an engine launch, stay quiet this long
                                # (model loading holds the port closed for a while)
-  "engine_suspended": "night"  # PLANNED engine downtime (2026-11-24 ruling:
-                               # night window frees GPU for a DiT instance).
-                               # "night" = don't relaunch the engine and don't
-                               # hold family-gated (comfyui) services hostage to
-                               # it, during [engine_night_from, engine_night_to)
-                               # local hours (wrap past midnight allowed; equal
-                               # from/to = all day). "always" = suspend any hour.
-  "engine_night_from": 22      # window start hour (default 22)
-  "engine_night_to": 8         # window end hour (default 8)
+  "guard_engine": false        # THE switch: set false = planned downtime, the
+                               # watchdog never (re)launches the engine AND the
+                               # type-level LLM-first gate is waived for
+                               # comfyui-family services (no waiting for an
+                               # engine that is intentionally off).
+  # Every guard_services entry (and every watchlist item the doors hand over)
+  # takes "enabled": true|false (default true). false = switch-off: never
+  # launched, never held; flip back to true whenever you want it guarded again
+  # (hot-read every cycle, no restart). (User ruling 2026-11-24: simple
+  # per-item switches, no time-window machinery.)
 The engine probe is the TCP port parsed from config.json "upstream" (same
 raw-socket probe as 8080). Same rules as the proxy: a healthy port is never
 touched, every engine it starts is its own detached child, duplicate launches
@@ -188,33 +188,10 @@ def read_engine_settings(config_path):
         with open(config_path, encoding="utf-8") as f:
             cfg = json.load(f)
     except (OSError, ValueError, TypeError, AttributeError):
-        return False, "", None, "", DEFAULT_ENGINE_GRACE_S, ENGINE_DEFAULT_PORT, False
+        return False, "", None, "", DEFAULT_ENGINE_GRACE_S, ENGINE_DEFAULT_PORT
     if not isinstance(cfg, dict) or cfg.get("guard_engine") is not True:
-        return False, "", None, "", DEFAULT_ENGINE_GRACE_S, ENGINE_DEFAULT_PORT, False
-    # Planned engine downtime (user ruling 2026-11-24, night DiT swap):
-    # "engine_suspended": "night" -> the watchdog neither relaunches the LLM
-    # engine during [engine_night_from, engine_night_to) local hours, nor
-    # holds family-gated services hostage to it (type-level LLM-first gate
-    # is skipped for that window). "always" suspends regardless of hour;
-    # absent/null = normal. The engine itself is stopped out-of-band
-    # (taskkill / a stop script); the watchdog just respects the window.
-    susp = cfg.get("engine_suspended")
-    if susp in ("night", "always"):
-        try:
-            nf = int(cfg.get("engine_night_from", 22)) % 24
-            nt = int(cfg.get("engine_night_to", 8)) % 24
-            hh = datetime.now().hour
-            if nf == nt:
-                in_window = True          # zero-width window = all day
-            elif nf > nt:
-                in_window = hh >= nf or hh < nt   # wrap past midnight
-            else:
-                in_window = nf <= hh < nt
-            if susp == "always" or in_window:
-                return (False, str(cfg.get("engine_backend") or ""), None, "",
-                        DEFAULT_ENGINE_GRACE_S, ENGINE_DEFAULT_PORT, True)
-        except (TypeError, ValueError):
-            pass
+        return False, "", None, "", DEFAULT_ENGINE_GRACE_S, ENGINE_DEFAULT_PORT
+
     backend = str(cfg.get("engine_backend") or "").strip().lower()
     launch = cfg.get("engine_launch")
     cmd = None
@@ -241,7 +218,7 @@ def read_engine_settings(config_path):
             engine_port = int(tail)
         except (ValueError, TypeError, AttributeError):
             pass
-    return (bool(cmd)), backend, cmd, cwd, grace, engine_port, False
+    return (bool(cmd)), backend, cmd, cwd, grace, engine_port
 
 
 # ---- guard_services (rev17c, 2026-11-22): list-driven guards. One entry per
@@ -334,6 +311,9 @@ def _validate_guard_item(item, config_dir):
                    if isinstance(item.get("family"), str) else None),
         "watch_url": (item.get("watch_url")
                       if isinstance(item.get("watch_url"), str) else None),
+        # per-item switch (user ruling 2026-11-24): false = planned downtime,
+        # the watchdog leaves it alone; default true.
+        "enabled": item.get("enabled") is not False,
     }
 
 
@@ -507,6 +487,8 @@ def guard_cycle(services, states, log_fn, cooldown, now, gens=None):
     if gens is None:
         gens = {}
     for svc in services:
+        if not svc.get("enabled", True):
+            continue   # switched off in the list: planned downtime, hands off
         st = states.setdefault(svc["name"], {"last_launch": None,
                                              "dep_met_at": None,
                                              "waiting_since": None,
@@ -793,7 +775,7 @@ def main():
             time.sleep(0.25)
 
     interval, cooldown = read_settings(args.config)
-    guard0, backend0, _, _, grace0, eport0, _susp0 = read_engine_settings(args.config)
+    guard0, backend0, _, _, grace0, eport0 = read_engine_settings(args.config)
     log_fn(f"watchdog started; pid={os.getpid()}; probe={LEDGER_HOST}:{args.port}; "
            f"interval={interval:g}s (live from config); cooldown={cooldown:g}s; "
            f"python={sys.executable}; lock={args.lock_port}; wake={flag_path}")
@@ -865,7 +847,7 @@ def main():
             log_fn(f"watchdog loop ERROR: {traceback.format_exc()}")
         # ---- engine guard (rev17d; default off = nothing below ever runs) ----
         try:
-            guard, backend, ecmd, ecwd, grace, eport, engine_susp = read_engine_settings(args.config)
+            guard, backend, ecmd, ecwd, grace, eport = read_engine_settings(args.config)
             if guard and ecmd:
                 if (guard, backend, eport) != last_engine_settings:
                     log_fn(f"engine guard settings: backend={backend or 'unlabelled'} "
@@ -901,14 +883,14 @@ def main():
             # publish watch_url hand the watchdog THEIR family list.
             noww = time.monotonic()
             try:
-                _, _, _, _, _, eport_now, eport_susp = read_engine_settings(args.config)
+                eguard_now, _, _, _, _, eport_now = read_engine_settings(args.config)
             except Exception:
                 eport_now = eport0
             extra = []
             for door in services:
                 url = door.get("watch_url")
-                if not url:
-                    continue
+                if not url or door.get("enabled", True) is False:
+                    continue   # door switched off: its family list is off too
                 cache = watch_cache.setdefault(door["name"],
                                                {"t": 0.0, "list": None})
                 if port_is_up(LEDGER_HOST, door["port"]) and (
@@ -936,9 +918,11 @@ def main():
             # only after the LLM engine (eport) is up and steady; members
             # within the family carry no order at all (self-contained
             # scripts + their own single-instance gates).
+            # Engine guard switched off (guard_engine not true) = planned
+            # engine downtime: waive the LLM-first gate entirely — comfyui
+            # members must not hold for an engine nobody is bringing up.
             for s in services:
-                if s.get("family") == "comfyui" and eport_now \
-                        and not eport_susp:
+                if s.get("family") == "comfyui" and eport_now and eguard_now:
                     s["wait_for"] = eport_now
                     if s["stabilize_s"] < 60.0:
                         s["stabilize_s"] = 60.0
