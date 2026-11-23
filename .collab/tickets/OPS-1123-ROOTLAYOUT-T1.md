@@ -16,18 +16,19 @@
     - `python tests/selftest_registry.py`＝**6/6 PASS**
     - `python tests/selftest_gateway_status.py`＝**18/18 PASS**
   - `python bootstrap.py --check`（母本仓根）＝**exit 2**（`[FAIL] 还没有 config.json`）＝母本仓根无运行时 config.json，实态如实登记（健康账 6）。
-  - 仓根盘面＝26 个非目录文件（`.gitignore`＋4 md＋5 py＋6 monitor 面＋csv/json 两数据＋4 bat/sh＋paths 等）；`git ls-files` 仓根面＝8 件在册＋`config.template.json`＋`service-examples/**`＋`docs/*.png`×3＋`legacy/**`＋`tests/**`＋`.collab/**`。
+  - 仓根盘面＝26 个非目录文件（`.gitignore`＋4 md＋5 py＋6 monitor 面＋csv/json 两数据＋4 bat/sh＋paths 等）；`git ls-files` 仓根面＝**现态实数 26 件在册**（v2/D-5 勘正：v1 此处"8 件在册"系把目标态白名单误写现态）＋`service-examples/**`＋`docs/*.png`×3＋`legacy/**`＋`tests/**`＋`.collab/**`；迁移后目标态仓根跟踪件收敛见 ③-1（白名单八件＋模板例外＋start-proxy.bat 归属＝H-8 候裁）。
   - 在岗面旁证（只读）：`GATEWAY_VERSION`＝`rev17k`（collector_proxy.py:84）——母票时序边界所指 rev17k 候静换载自动化已落码，时序前置满足。
   - 部署面 `D:/Strata-toolkit/token-ledger-proxy/config.json` 只读对拍实读：**无 `collector_script` 键**；`out_dir="@here/data"`、`listen=":::8080"`、`upstream="http://127.0.0.1:8787"`、`strata_config="D:\Strata-toolkit\basalt\basalt_config.json"`（绝对）、`engine_launch.cmd/cwd` 全绝对（basalt.exe 路径）——**零 `@pkg` 引用**；部署面根另有 `relaunch-now.flag`、`logs/`、`ledger-watchdog.log`、`collector-proxy.log`、根级 `selftest_*.py` 四份（运行时件，健康账 3/8 登记）。
   - 启动夹实装件（只读）`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Token ledger watchdog.vbs`：`pkg = "D:\Strata-toolkit\token-ledger-proxy"`、拉起 `pkg & "\ledger_watchdog.py" --lock-wait 86400`——＝人工闸②面，本票只出改法（H-2）。
 - 起草席位／修票权席位：架构席
 - 前置件：OPS-1123-ROOTLAYOUT（母票·已立案）；rev17k 候静换载自动化先行（时序边界§五，已满足）
 - 修订记录：**v1**（初稿；本票落盘外零触碰；票未放行、零施工——本票起草全程未执行任何 git mv/git 写操作，全部迁移命令为票内待执行规格）
+- 修订记录：**v2**（双席独立审票收口后按修票令升版，append-only：命中行就地改＋逐条标注出处＝审席回执项号。必修：D-1＝②-0 G-5 读码结论撤销改 :161 插 gateway/；D-2＝②-0 G-4 改法定位 reporting/；D-3＋D-5＝start-proxy.bat 归属候裁 H-8 新设＋票头开端读数勘正；D-4＝③-6 A 计数基线双读数写死；D-6＝启动器族行号系统性勘正（六处，逐字 old_string 保留）；Y-3＝H-1 同窗原子清单补 run-ledger-watchdog.bat；Y-4＝bootstrap --selftest 既存 FAIL 措辞统一为实跑实证＋"健康账 9"编号勘正→7。随 v2 登记注记：Y-1/Y-2/Y-5 入④。修票全程零 git 写、只触本票文件）
 
 ### 准入四判据自查（票面自证）
 
 1. **无 API 变更**：零对外行为变化——路由面（/health /monitor* /ext.json /capabilities /gateway/status /v1/*）、账本行、gate 语义、看门狗行为、报表输出全部零改；功能 diff＝0 由 ③-10 白名单 grep 机检。
-2. **口径已裁**：目标形态树＝母票§一闭集照录；随动点全部**读码证实**（②-0 逐条文件:行，无一凭母票措辞）；装配细节票裁 A-1～A-8；五个来源/时序/形制面上候裁 H-1～H-6。
+2. **口径已裁**：目标形态树＝母票§一闭集照录；随动点全部**读码证实**（②-0 逐条文件:行，无一凭母票措辞）；装配细节票裁 A-1～A-8；来源/时序/形制面上候裁 H-1～H-6（v2/D-3 增 H-8＝start-proxy.bat 仓根归属候裁）。
 3. **可机械验收**：③十二条全带可执行命令＋期望读数（恰集命令／六套套数不变全绿／bootstrap 三绿／throwaway 真服务三面 curl／看门狗集成新深度重跑／rename 读数／功能语义零变更白名单 grep／文档与 GBK 件随动读数）。
 4. **不触真源**：不改任何功能语义、不碰两域 config.json、不改 benchmark-registry.json/api-price-table.csv 内容、不碰在岗 8080/8787、不执行启动夹实装件与部署面任何动作；tests 用例断言语义零改（只改定位路径，六套套数 46/31/57/15/6/18 迁移后必须不变＝改断言即判红）。
 
@@ -66,21 +67,21 @@
 **E. reporting 互 import（纠母票措辞）**：读码＝**daily_report 与 html_report 互不 import**（html_report 零引用 daily_report，反向亦然；daily_report 只出 .md :255-265，html_report 独立出 usage-report.html :428）。真实随动链＝两件套各自对 `paths.py` 的**同目录假设**：daily_report.py:19 `sys.path.insert(0, <脚本目录>)`＋:23 `from paths import load_config`；html_report.py:25 同法——迁 reporting/ 后 paths.py 不在同目录＝**必改**（补 gateway/ 到 sys.path，S-7）。另＋collector_proxy 调度线程 import daily_report 一条（D 已登记）。
 
 **F. 启动器族（实读现值）**：
-- `start.bat`（**GBK+CRLF 字节面实核**：iconv 可解＝GBK、CRLF、含非 ASCII）：`cd /d "%~dp0"`＋`python bootstrap.py --init/--check`（留根，零改）＋**:7 `start "Token ledger watchdog" /min python ledger_watchdog.py`＝须随动 `gateway\ledger_watchdog.py`（纠母票预设：start.bat 并非零改件）**。
+- `start.bat`（**GBK+CRLF 字节面实核**：iconv 可解＝GBK、CRLF、含非 ASCII）：`cd /d "%~dp0"`＋`python bootstrap.py --init/--check`（留根，零改）＋**:8 `start "Token ledger watchdog" /min python ledger_watchdog.py`＝须随动 `gateway\ledger_watchdog.py`（纠母票预设：start.bat 并非零改件；行号 v2/D-6 勘正，v1 误记 :7）**。
 - `start.sh`（UTF-8/LF）：**:13 `exec "$PY" ledger_watchdog.py`＝随动 `gateway/ledger_watchdog.py`**（:11-12 bootstrap 两行留根零改）。
-- `start-proxy.bat`（GBK 家族·纯 ASCII 字节＋CRLF）：**:11 `"%PY%" collector_proxy.py --config "%~dp0config.json"`＝随动 `gateway\collector_proxy.py`**；此件＝`proxy_launch` 脚本化补岗的人机同入口（看门狗 :376-403 读 config 的 proxy_launch 调它），在岗 config 现无 proxy_launch 键（直发默认），改法为部署面换载时的同构项（H-1 素材）。
-- `watchdog-console.bat`（GBK+CRLF，含非 ASCII）：cd/拉起全为**硬编码绝对路径** `C:\Work\LLM\token-ledger-proxy` 两处＋`...\watchdog-launcher.py`＝本仓无该路径（他机样例形态），随动＝两处在 GBK 字节面替换为 `...\token-ledger-proxy\gateway`（S-9 字节纪律）。
+- `start-proxy.bat`（GBK 家族·纯 ASCII 字节＋CRLF）：**:10 `"%PY%" collector_proxy.py --config "%~dp0config.json"`＝随动 `gateway\collector_proxy.py`**（行号 v2/D-6 勘正，v1 误记 :11）；此件＝`proxy_launch` 脚本化补岗的人机同入口（看门狗 :376-403 读 config 的 proxy_launch 调它），在岗 config 现无 proxy_launch 键（直发默认），改法为部署面换载时的同构项（H-1 素材）。**归属候裁见 H-8（v2/D-3：该件现居仓根且受版本管理，无家可归＝③-1 必自红）**。
+- `watchdog-console.bat`（GBK+CRLF，含非 ASCII）：cd/拉起全为**硬编码绝对路径** `C:\Work\LLM\token-ledger-proxy` 两处＋`...\watchdog-launcher.py`（launcher 行实＝:12，v2/D-6 勘正）＝本仓无该路径（他机样例形态），随动＝两处在 GBK 字节面替换为 `...\token-ledger-proxy\gateway`（S-9 字节纪律）。
 - `watchdog-launcher.py`（**UTF-8+BOM+CRLF** 实核）：:22-24 硬编码 `ROOT = r"C:\Work\LLM\token-ledger-proxy"`、`WD = os.path.join(ROOT, "ledger_watchdog.py")`＝ROOT 保持指包根、**WD 随动 `"gateway", "ledger_watchdog.py"`**；:57 `os.chdir(ROOT)` 语义不变（A-1 下 ROOT＝包根仍对）。该件迁入 gateway/（母票树），但其路径为绝对常量、与自身位置无关。
-- `service-examples/Token ledger watchdog.vbs`（ASCII+CRLF）：注释 :4-5「留在包目录 next to ledger_watchdog.py」随动改措辞＋launch 行 `here & "ledger_watchdog.py"`（:31）→ `here & "gateway\ledger_watchdog.py"`（VBS 以自身所在目录解析 `here`，样例随包目录不变、只改子路径）。
-- `com.token.ledger.plist` :12/:16 与 `token-ledger.service` :11/:13：`/opt/token-ledger-proxy/ledger_watchdog.py`＋WorkingDirectory → 补 `gateway/` 段（日志/data 路径不动）。
+- `service-examples/Token ledger watchdog.vbs`（ASCII+CRLF）：注释 :3-4「留在包目录 next to ledger_watchdog.py」随动改措辞＋launch 行 `here & "ledger_watchdog.py"`（:29）→ `here & "gateway\ledger_watchdog.py"`（行号 v2/D-6 勘正：launchLine 实＝:29、注释实＝:3-4，v1 误记 :31、:4-5；VBS 以自身所在目录解析 `here`，样例随包目录不变、只改子路径）。
+- `com.token.ledger.plist` :11/:14 与 `token-ledger.service` :11：`/opt/token-ledger-proxy/ledger_watchdog.py`＋WorkingDirectory → 补 `gateway/` 段（行号 v2/D-6 勘正：plist 脚本行实＝:11、WorkingDirectory 实＝:14，v1 误记 :12/:16；service ExecStart 实＝:11，v1 S-10 误记 :13；日志/data 路径不动）。
 - 启动夹实装 VBS（票头已读）：`pkg & "\ledger_watchdog.py"` → `pkg & "\gateway\ledger_watchdog.py"`＝**人工闸②面，只出改法（H-2）**。仓内 `legacy/startup_bat_backup_20261123/` 两件均 `.disabled/.fromStartup` 后缀＝已退役备份，不入任何启动链。
 
 **G. 六套 selftest 定位面（逐套实读结论：每套都只需改定位行，断言零动）**：
 1. `selftest_proxy.py`：:33 HERE=tests→仓根（保持）；**:34 `PROXY_SCRIPT = <根>/collector_proxy.py` → `gateway/`**（:529/:782 spawn 用它）。其余全落 tmp 沙箱。**改 1 行**。
 2. `selftest_watchdog.py`：:22 ROOT=仓根（保持）；**:23 `WD_SCRIPT = <根>/ledger_watchdog.py` → `gateway/`**（:91 importlib 加载＋:162 集成 spawn＝母票§四-4"新 `__file__` 深度重跑"所指即此）。**改 1 行**。
 3. `selftest_monitor.py`：:45 HERE=仓根（保持）；**:209 `spec_from_file_location(..., <根>/monitor_ext.py)` → `monitor/`**；**:465-468 四处字节读 `<根>/monitor_ext.py` → `monitor/`**；**:513/:696 两处 node 跑 `<根>/monitor.js` → `monitor/`**。**改 6 行**。
-4. `selftest_daily_report.py`：:23 HERE=仓根；**:24 `sys.path.insert(0, HERE)` → 补 `gateway`（paths.py 新家；daily_report 自身经 :31 `import daily_report` 由其自举 S-7 兜住）**。**改 1 行**。
-5. `selftest_registry.py`：:28 HERE=仓根（保持）；**:29 `REGISTRY = <根>/benchmark-registry.json` → `data-defs/`**；:161-162 `sys.path.insert(0, HERE)`＋`import collector_proxy`——collector_proxy 迁入 gateway/ 后此 import 依赖 S-5 自举（collector_proxy 自带 :71 脚本目录插路径）→ 本行可保持 HERE 不改亦可，**票面裁：保持 :161 不动，import 经 S-5 自举成立**（读码：import 机制经 spec 定位的模块自带路径引导，先例＝②-0 D）。**改 1 行**。
+4. `selftest_daily_report.py`：:23 HERE=仓根；**:24 `sys.path.insert(0, HERE)` → 改插 `os.path.join(HERE, "reporting")`**——v2/D-2 修（同 D-1 型错误）：:31 顶层裸 `import daily_report`，迁移态保持 HERE 指根＝整套直接崩（不是"由 S-7 自举兜住"——自举在模块被找到后才执行）；定位 daily_report 需插 **reporting/**（**不是 gateway**；paths.py 由 daily_report 自身 S-7 引导兜住，无需测试侧插 gateway）。**改 1 行**（计数不变）。
+5. `selftest_registry.py`：:28 HERE=仓根（保持）；**:29 `REGISTRY = <根>/benchmark-registry.json` → `data-defs/`**；**:161 `sys.path.insert(0, HERE)` → 改插 `os.path.join(HERE, "gateway")`（同 G-6 手法）**——v2/D-1 修（审计席读码实证＋工程师席实跑互证）：:161-162 属常规 name-based import，S-5 自举（collector_proxy 自带 :71）在该模块**被找到之后**才执行，兜不住定位本身；迁移态保持 :161 不动＝ImportError→R-5 落 except→③-2 registry 套必红。原"保持 :161 不动，import 经 S-5 自举成立"读码结论**撤销**。**改 1 行**（计数不变）。
 6. `selftest_gateway_status.py`：:24 ROOT=仓根；:25 `sys.path.insert(0, ROOT)`＋:27 `import collector_proxy as cp` → **:25 改插 `ROOT/gateway`**（:31 SCRATCH 锚 ROOT/.scratch 不动——与 dev-discipline §8 已一致）。**改 1 行**。
 
 **H. 文档/模板引用面（实读）**：README.md 命令行引用十处（:29/:30/:65/:97/:108/:113/:120/:131/:138/:163-165/:180/:185-186/:216/:240/:248-254）中随目录者＝`python ledger_watchdog.py`（:108）、`python collector_proxy.py --fp`（:131/:138）、`python daily_report.py` / `python html_report.py`（:163-165/:185-186/:252-253）＋:113 叙述句；INSTALL.md :36-38/:49/:58/:61/:73-75/:85/:90-93/:97 同类。`config.template.json:25` comment 两处措辞（`python collector_proxy.py --fp`、"collector_script 留空即使用本包内的 collector_proxy.py"）。部署面 config.json 的 comment 同款措辞——**运行时件，不改**（健康账 3）。
@@ -186,16 +187,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 - 读码 E 实证两件套互不 import，"互 import"随动项＝不存在，如实收空。
 
 **S-8 仓根启动三件**：
-- `start.bat`（**GBK 字节纪律见 S-9 同条**；CRLF 保持）：第 7 行 `start "Token ledger watchdog" /min python ledger_watchdog.py` → `start "Token ledger watchdog" /min python gateway\ledger_watchdog.py`。余行零动（`cd /d "%~dp0"`＋bootstrap 两行留根）。
-- `start.sh`（UTF-8/LF）：:13 `exec "$PY" ledger_watchdog.py` → `exec "$PY" gateway/ledger_watchdog.py`。
-- `start-proxy.bat`（ASCII 字节＋CRLF）：:11 `"%PY%" collector_proxy.py --config "%~dp0config.json"` → `"%PY%" gateway\collector_proxy.py --config "%~dp0config.json"`（config 仍锚 bat 所在目录＝部署根，A-1 同锚）。
+- `start.bat`（**GBK 字节纪律见 S-9 同条**；CRLF 保持）：第 8 行（v2/D-6 勘正，v1 误记第 7 行；逐字 old_string 不变）`start "Token ledger watchdog" /min python ledger_watchdog.py` → `start "Token ledger watchdog" /min python gateway\ledger_watchdog.py`。余行零动（`cd /d "%~dp0"`＋bootstrap 两行留根）。
+- `start.sh`（UTF-8/LF）：:13 `exec "$PY" ledger_watchdog.py` → `exec "$PY" gateway/ledger_watchdog.py`（行号 v2 复核无误）。
+- `start-proxy.bat`（ASCII 字节＋CRLF）：:10（v2/D-6 勘正，v1 误记 :11；逐字 old_string 不变）`"%PY%" collector_proxy.py --config "%~dp0config.json"` → `"%PY%" gateway\collector_proxy.py --config "%~dp0config.json"`（config 仍锚 bat 所在目录＝部署根，A-1 同锚）。**该件仓根归属按 H-8 裁定落位（v2/D-3）：裁②迁 gateway/ 时本改法前缀随动为 `gateway\` 行不变、另加 `git mv` 一条＋:10 `%~dp0config.json` 锚随改 `..\config.json`（A-1 同锚连锁）**。
 
-**S-9 GBK/字节面件改法纪律（重申并钉死）**：`start.bat`、`start-proxy.bat`、`watchdog-console.bat`、`service-examples/Token ledger watchdog.vbs` 四件——**改动必须按原字节编码写回**：先 `iconv -f GBK -t UTF-8` 解码、改目标行、`iconv -f UTF-8 -t GBK` 编码回写、CRLF 行尾保持（`file`/cmp 判据见 ③-11）；禁止以 UTF-8 直接写回（chcp 936 窗口即乱码）。`watchdog-launcher.py`＝UTF-8+BOM+CRLF：编辑保 BOM 保 CRLF，只动 :24 一行：`WD = os.path.join(ROOT, "ledger_watchdog.py")` → `WD = os.path.join(ROOT, "gateway", "ledger_watchdog.py")`（:22 `ROOT` 常量值不动——它是部署机绝对路径，指包根语义仍对；健康账 7 登记其绝对路径实态）。`watchdog-console.bat`：两处 `cd /d C:\Work\LLM\token-ledger-proxy`（:5）与末行 launcher 绝对路径 `"C:\Work\LLM\token-ledger-proxy\watchdog-launcher.py"`（:13）→ 均补 `\gateway` 段（GBK 字节面替换）。
+**S-9 GBK/字节面件改法纪律（重申并钉死）**：`start.bat`、`start-proxy.bat`、`watchdog-console.bat`、`service-examples/Token ledger watchdog.vbs` 四件——**改动必须按原字节编码写回**：先 `iconv -f GBK -t UTF-8` 解码、改目标行、`iconv -f UTF-8 -t GBK` 编码回写、CRLF 行尾保持（`file`/cmp 判据见 ③-11）；禁止以 UTF-8 直接写回（chcp 936 窗口即乱码）。`watchdog-launcher.py`＝UTF-8+BOM+CRLF：编辑保 BOM 保 CRLF，只动 :24 一行：`WD = os.path.join(ROOT, "ledger_watchdog.py")` → `WD = os.path.join(ROOT, "gateway", "ledger_watchdog.py")`（:22 `ROOT` 常量值不动——它是部署机绝对路径，指包根语义仍对；健康账 7 登记其绝对路径实态）。`watchdog-console.bat`：两处 `cd /d C:\Work\LLM\token-ledger-proxy`（:5）与 launcher 绝对路径 `"C:\Work\LLM\token-ledger-proxy\watchdog-launcher.py"`（:12，v2/D-6 勘正，v1 误记 :13）→ 均补 `\gateway` 段（GBK 字节面替换）。`watchdog-launcher.py` :22/:24/:57 行号 v2 复核无误勿动。
 
 **S-10 `service-examples/` 三件＋启动夹方案（只出改法）**：
-- `Token ledger watchdog.vbs`：注释 :4-5 "Leave it in the package directory next to ledger_watchdog.py" → "Leave it in the package directory (the watchdog now lives in the gateway/ subdirectory)"；:31 `launchLine = q & py & q & " " & q & here & "ledger_watchdog.py" & q & " --lock-wait 86400"` → `... & here & "gateway\ledger_watchdog.py" & ...`（`here` 仍＝VBS 所在包根，CurrentDirectory 保持根＝与 A-1 锚性一致）。
-- `com.token.ledger.plist`：:12 `<string>/opt/token-ledger-proxy/ledger_watchdog.py</string>` → `.../gateway/ledger_watchdog.py`（WorkingDirectory :16、日志 :19-20 不动＝锚包根）。
-- `token-ledger.service`：:13 `ExecStart=/usr/bin/python3 /opt/token-ledger-proxy/ledger_watchdog.py` → 补 `/gateway/`（WorkingDirectory :10、日志不动）。
+- `Token ledger watchdog.vbs`：注释 :3-4 "Leave it in the package directory next to ledger_watchdog.py"（v2/D-6 勘正行号，v1 误记 :4-5）→ "Leave it in the package directory (the watchdog now lives in the gateway/ subdirectory)"；:29（v2/D-6 勘正，v1 误记 :31）`launchLine = q & py & q & " " & q & here & "ledger_watchdog.py" & q & " --lock-wait 86400"` → `... & here & "gateway\ledger_watchdog.py" & ...`（`here` 仍＝VBS 所在包根，CurrentDirectory 保持根＝与 A-1 锚性一致）。
+- `com.token.ledger.plist`：:11 `<string>/opt/token-ledger-proxy/ledger_watchdog.py</string>`（v2/D-6 勘正，v1 误记 :12）→ `.../gateway/ledger_watchdog.py`（WorkingDirectory :14（v1 误记 :16）、日志 :19-20 不动＝锚包根）。
+- `token-ledger.service`：:11 `ExecStart=/usr/bin/python3 /opt/token-ledger-proxy/ledger_watchdog.py`（v2/D-6 勘正，v1 误记 :13）→ 补 `/gateway/`（WorkingDirectory :10、日志不动）。
 - 启动夹实装 VBS（仓外·人工闸②）改法登记于 H-2，本票不执行。
 
 **S-11 文档与模板 comment 随动**：
@@ -214,13 +215,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 
 > 母本仓根跑，diff 基线＝开工 `git rev-parse HEAD`（开工若因放行落链前移，以开工实拍为基线并在回执声明，沿 GWSTATUS 先例）。验收全程禁 git 写操作（只读；`git mv` 属施工动作已在 S-1 完成，不重复执行）。在岗 8080/8787 不入判据（④）。
 
-1. **仓根白名单恰集**：`git ls-files | grep -v / | grep -v '^config.template.json$' | sort` 期望读数＝**恰八行** `CHANGELOG.md INSTALL.md MANIFEST.md README.md bootstrap.py start.bat start.sh .gitignore` 的排序集（`.gitignore` 计入八件白名单＝母票§一恰集；`config.template.json`＝模板运行时件，按母票表"config-examples 保留现位"同理留根入 git——**若放行裁模板也须入白名单恰集，则 S-15 候裁 H-5 补一条 `git mv config.template.json config-examples/…` 或改白名单九件，票面按八件＋模板例外写死**）。辅判盘面：`ls -1A -p | grep -v '/$' | grep -v '^config.json$\|^relaunch-now.flag$'`＝白名单八件＋config.template.json＋gitignore 域运行时件（data/logs 目录），不得长出其他文件。
+1. **仓根白名单恰集**：`git ls-files | grep -v / | grep -v '^config.template.json$' | sort` 期望读数＝**恰八行** `CHANGELOG.md INSTALL.md MANIFEST.md README.md bootstrap.py start.bat start.sh .gitignore` 的排序集（`.gitignore` 计入八件白名单＝母票§一恰集；`config.template.json`＝模板运行时件，按母票表"config-examples 保留现位"同理留根入 git——**若放行裁模板也须入白名单恰集，则 S-15 候裁 H-5 补一条 `git mv config.template.json config-examples/…` 或改白名单九件，票面按八件＋模板例外写死**）。**v2/D-3 补：`start-proxy.bat` 现居仓根且受版本管理＝S-1 十七条 git mv 未为其安家，若不裁归属则施工后仓根跟踪件＝白名单八＋config.template＋start-proxy.bat＝**9≠8**，本判据必自红（抢跑中间态已实跑实证 9 行）——归属按 H-8 三选一裁定落位：裁①＝白名单改九件、本判据期望改九行（start-proxy.bat 入列）；裁②＝补 `git mv start-proxy.bat gateway/` 一条（映射表补行）＋S-8 该件 :10 `%~dp0config.json` 锚随改 `..\config.json`（A-1 同锚连锁），本判据期望仍八行；裁③＝根面例外条款写死进本判据（照模板例外同法：`grep -v '^start-proxy.bat$'` 后恰八行＋例外声明入 STRUCTURE）**。辅判盘面：`ls -1A -p | grep -v '/$' | grep -v '^config.json$\|^relaunch-now.flag$'`＝白名单八件＋config.template.json＋gitignore 域运行时件（data/logs 目录），不得长出其他文件。
 2. **六套全绿（套数不变＝断言语义零改的机检）**：`python tests/selftest_proxy.py` 末行 **46/46 PASS** exit 0；`python tests/selftest_watchdog.py` 末行 **RESULT: 31 passed, 0 failed** exit 0；`python tests/selftest_monitor.py` **57/57 PASS** exit 0；`python tests/selftest_daily_report.py` **15/15 PASS** exit 0；`python tests/selftest_registry.py` **6/6 PASS** exit 0；`python tests/selftest_gateway_status.py` **18/18 PASS** exit 0。任何套数增减＝改断言＝判红。
 3. **bootstrap 三绿**：throwaway config 下（见 5）`python bootstrap.py --check` 输出含 **`必需文件齐全（16 个）`** 且退出码 **0**（REQUIRED 清单经 S-16 bootstrap 随动后按新路径核对——见下 S-16 补充行）；`python bootstrap.py --selftest` 输出 **`三套回归全部通过`** exit 0。
-   - **S-16 补充（bootstrap.py REQUIRED 面随动，闭集内）**：bootstrap.py :25-26 HERE/sys.path（bootstrap 留根＝包根，:26 找 paths.py **已不可同目录寻**）→ :26 后补 `sys.path.insert(0, os.path.join(HERE, "gateway"))`；:30-36 `REQUIRED` 元组按新落位改前缀：`"gateway/collector_proxy.py", "monitor/monitor_ext.py", "monitor/monitor.html", "monitor/monitor.js", "monitor/monitor.css", "monitor/monitor-sprite.svg", "monitor/ext.js", "reporting/daily_report.py", "reporting/html_report.py", "gateway/ledger_watchdog.py", "gateway/switch_proxy.py", "tests/selftest_proxy.py", "tests/selftest_watchdog.py", "tests/selftest_monitor.py", "tests/selftest_daily_report.py", "gateway/paths.py"`（原 tuple 实点 **16 项**照改前缀，**项数不变 16**；:87 拼合逻辑 `os.path.join(HERE, f)` 支持相对子路径，零改）；:206-209 `--selftest` 三套路径 → `"tests/selftest_*.py"` 前缀补 `tests/`（现值＝`os.path.join(HERE, name)` name 无 tests/ 前缀——读码 :206＝**bootstrap 现假定 selftest 与 bootstrap 同目录**；现仓根无 selftest 文件（盘面实读），推断 bootstrap --selftest 现即 FAIL（本席未实跑 --selftest，此为读码推断）——健康账 7 如实登记；S-16 修为 `tests/` 前缀＝**行为修复非语义变更**，若放行认为越界则候裁 H-6）。
+   - **S-16 补充（bootstrap.py REQUIRED 面随动，闭集内）**：bootstrap.py :25-26 HERE/sys.path（bootstrap 留根＝包根，:26 找 paths.py **已不可同目录寻**）→ :26 后补 `sys.path.insert(0, os.path.join(HERE, "gateway"))`；:30-36 `REQUIRED` 元组按新落位改前缀：`"gateway/collector_proxy.py", "monitor/monitor_ext.py", "monitor/monitor.html", "monitor/monitor.js", "monitor/monitor.css", "monitor/monitor-sprite.svg", "monitor/ext.js", "reporting/daily_report.py", "reporting/html_report.py", "gateway/ledger_watchdog.py", "gateway/switch_proxy.py", "tests/selftest_proxy.py", "tests/selftest_watchdog.py", "tests/selftest_monitor.py", "tests/selftest_daily_report.py", "gateway/paths.py"`（原 tuple 实点 **16 项**照改前缀，**项数不变 16**；:87 拼合逻辑 `os.path.join(HERE, f)` 支持相对子路径，零改）；:206-209 `--selftest` 三套路径 → `"tests/selftest_*.py"` 前缀补 `tests/`（现值＝`os.path.join(HERE, name)` name 无 tests/ 前缀——读码 :206＝**bootstrap 现假定 selftest 与 bootstrap 同目录**；现仓根无 selftest 文件（盘面实读）——**v2/Y-4 措辞统一：`--selftest` 既存 FAIL＝审计席实跑复现实证（exit 1，三套 can't open file），非读码推断**，健康账 7 登记为实跑登记；S-16 修为 `tests/` 前缀＝**行为修复非语义变更**，若放行认为越界则候裁 H-6）。
 4. **throwaway 真服务三面 curl**（施工席在 throwaway 端口起活，`--config` 指 throwaway config，`listen 127.0.0.1:18080`／`upstream` 指 bind(0) 即放的上游或任一假端口）：起 `python gateway/collector_proxy.py --config .scratch/OPS-1123-ROOTLAYOUT-T1/cfg.json` 后——`curl --noproxy '*' -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/health`＝**200**；`.../gateway/status`＝**200** 且 JSON `.schema=="unified-status/v0"`；`.../capabilities`＝**200** 且 `gateway.version=="rev17k"`；`curl ... /monitor`＝**200** 且 body 含 `monitor.css`（前端面在新深度经 monitor_ext 自读仍活）。测毕杀进程、清零 `.scratch/OPS-1123-ROOTLAYOUT-T1/`。
 5. **看门狗集成在新深度重跑绿**：③-2 的 selftest_watchdog 即集成面（:91 importlib 新深度加载＋:162 起真看门狗进程 spawn WD_SCRIPT 新路径）；另跑 `python gateway/ledger_watchdog.py --config <throwaway cfg> --port <free> --lock-port 43999 --log .scratch/…/wd.log --cycles 2` exit 0 且日志含 `watchdog started` 与 `relaunch-now.flag` 路径＝**throwaway cfg 所在目录**（flag 锚 config 旁实证）＋`ls <根>/logs/` 出 `ledger-watchdog.log`（日志锚根实证）＋import 期 makedirs 副作用不再在 `gateway/logs/` 长出目录（`git status` 无 `gateway/logs` 辅判）。bootstrap --check 三绿所需 throwaway config 于测后删除：`git status --porcelain | grep config.json`＝**空**。
-6. **rename 全覆盖**：`git diff --find-renames --name-status <基线> | grep '^R' | wc -l` ＝ **17**（映射表 1-17 行全为 rename）；`git diff --find-renames --name-status <基线> | grep -c '^A'`＝**2**（STRUCTURE.md＋票本体；swb-anchor 在 gitignore 域不入 diff）；`grep '^D'`＝**0**。
+6. **rename 全覆盖**：`git diff --find-renames --name-status <基线> | grep '^R' | wc -l` ＝ **17**（映射表 1-17 行全为 rename；H-8 裁②则改 **18**）；`git diff --find-renames --name-status <基线> | grep -c '^A'`＝**基线双读数写死（v2/D-4：v1 期望 2 隐含基线＝98520fd，与"基线＝开工 HEAD（必≥ce41e06）"条款自相矛盾）**：基线＝`98520fd`（票本体尚未入库）→ A＝**2**（STRUCTURE.md＋票本体）；基线＝`ce41e06` 或其后的开工 HEAD（票本体已在基线）→ A＝**1**（仅 STRUCTURE.md；swb-anchor 在 gitignore 域不入 diff）；`grep '^D'`＝**0**。
 7. **越领地核验**：`git diff --name-only <基线> | grep -vE '^(gateway/|monitor/|reporting/|data-defs/|docs/|README\.md|INSTALL\.md|CHANGELOG\.md|MANIFEST\.md|bootstrap\.py|start\.bat|start\.sh|start-proxy\.bat|config\.template\.json|service-examples/|tests/selftest_|\.collab/tickets/OPS-1123-ROOTLAYOUT-T1\.md|legacy/README\.md)' | wc -l` ＝ **0**。
 8. **功能语义零变更（collector_proxy diff 白名单）**：`git diff <基线> -M -- gateway/collector_proxy.py | grep -E '^[-+][^-+]' | grep -vE 'sys\.path|_SCRIPT_DIR|_PKG_ROOT|benchmark-registry|data-defs|scripts_dir|lives (in|next)|import 引导注释|monitor_ext 新家|daily_report 新家' | wc -l` ＝ **0**（diff 变更行全部落路径常量/引导行白名单）；辅判 `git diff <基线> -M | grep -c 'GATEWAY_VERSION'` ＝ **0**。
 9. **前端五件零字节**：`git diff <基线> -M -- monitor/monitor.html monitor/monitor.js monitor/monitor.css monitor/monitor-sprite.svg monitor/ext.js data-defs/benchmark-registry.json data-defs/api-price-table.csv | wc -l` ＝ **0**（rename 后内容零 diff＝数据/前端逐字节不动）。
@@ -236,7 +237,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 - **在岗服务零接触**：全部验收在 throwaway 端口/import 桩；在岗 8080/8787 换新布局＝部署面换载链（H-1），生效需在岗重启走 `switch_proxy.py` 纪律＝人工闸②时序面。
 - **`git mv` 即写操作但属施工**：起草与本验收全程禁 git 写；施工席执行 S-1 时 `git mv` 为票内许可动作，提交落位由主理人程序定（本票不规定 commit 形态）。
 - **施工面纪律**：临时工作物只落 `.scratch/OPS-1123-ROOTLAYOUT-T1/`，完工前清零；单一工程师席新鲜实例、同席禁多实例。
-- **交付与回执**：完工回执＝开端 HEAD＋写入清单（字节数＋sha256 前→后逐件）＋③十二条读数原文＋`.scratch/` 自查。票放行＝主理人程序确认；A-x 随票生效；H-1～H-6 随放行件裁定，裁定不同则修票替换对应 S/③行。
+- **交付与回执**：完工回执＝开端 HEAD＋写入清单（字节数＋sha256 前→后逐件）＋③十二条读数原文＋`.scratch/` 自查。票放行＝主理人程序确认；A-x 随票生效；H-1～H-8 随放行件裁定，裁定不同则修票替换对应 S/③行。
+- **过渡窗口纪律（v2/Y-1 登记注记）**：本票施工落链后至部署面换载（H-1）完成前的过渡窗口内，若需修复任何涉启动链/引用链的缺陷＝**修复票双开（母本＋部署面同拍）或冻结部署面动作**，禁止单侧修。
+- **断言锁覆盖面条款（v2/Y-2 登记注记）**：③-2 套数锁只锁断言计数，不锁定位行以外的代码行——放行件回执须**逐件贴 diff 交审计席目检**，作为断言锁的覆盖面补强条款。
+- **回滚宣示（v2/Y-5 登记注记）**：回滚路径＝`git revert` 施工提交一条＋反向 `git mv` 按映射表 1-17 行逐一逆向声明（新→旧），随放行件登记。
 
 ## 租约段（票内·经架构签注由 B2 lease-issuer 实例化）
 
@@ -252,19 +256,24 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 - **A-3｜collector 同目录默认不改**：watchdog:137 `HERE/collector_proxy.py` 与 collector 同迁入 gateway/＝默认解析自动随迁，改它反而引入双源。
 - **A-4｜前端引用零随动**：读码 D 结论＝路由按 URL 文件名硬路由（monitor_ext.py:602-613），前端引用为绝对 URL（monitor.html:13/:21/:109），代码深度变化不触及 URL 面；前端五件零字节（③-9 锁）。
 - **A-5｜跨包 import 用 sys.path 插目录，不建包/不建 `__init__.py`**：仓内 import 先例全部是"脚本目录插 sys.path＋裸模块名"（collector:71、daily:19、html:25、watchdog:82、switch:45）；改包结构＝改 import 语句＝语义改动面扩大，违"纯迁移"负声明。
-- **A-6｜bootstrap REQUIRED 补前缀＋selftest 路径修 tests/**：REQUIRED 是文件存在性核对面（:87 join），补前缀＝随迁必改；`--selftest` 现值无 `tests/` 前缀在现仓即 FAIL（健康账 9 实跑登记＝既存缺陷），S-16 顺手修复＝路径定位修复非断言语义变更；如放行判越界则按 H-6 剥离回原值。
+- **A-6｜bootstrap REQUIRED 补前缀＋selftest 路径修 tests/**：REQUIRED 是文件存在性核对面（:87 join），补前缀＝随迁必改；`--selftest` 现值无 `tests/` 前缀在现仓即 FAIL（健康账 **7** 实跑登记——编号 v2/Y-4 勘正，v1 此处误写"健康账 9"，全账无 9；FAIL 已由审计席实跑复现＝exit 1 三套 can't open file，既存缺陷），S-16 顺手修复＝路径定位修复非断言语义变更；如放行判越界则按 H-6 剥离回原值。
 - **A-7｜watchdog-launcher 绝对 ROOT 常量不改值、只补 gateway 段**：该件路径是他机绝对申报（C:\Work\LLM\...），本仓不持该机实态；改法保持"ROOT＝包根、WD＝ROOT+gateway+脚本"同构（A-1 族），绝对路径实态入健康账 7 备查——不在本票顺手改成相对（改相对＝行为变更）。
 - **A-8｜docs/README.md（原 legacy/README.md）迁移入 docs/**：母票表列"docs/＝STRUCTURE.md＋既有截图"未列 legacy/README；读码实态＝legacy/README.md 是 legacy 族导读（登记 legacy 三件的来历），其语义属说明域非废弃件本体；迁 docs/ 使 legacy/ 只剩废弃件＋备份夹。**若放行裁 legacy/README.md 应留守 legacy/＝删 S-1 最后一行 git mv＋映射表 17 行即回滚（候裁 H-3）**。
 
 ## 候裁单列（H-x·决策者/主理人拍板，本席不裁）
 
-- **H-1｜部署面同构迁移＋换载时序（人工闸②）**：`D:/Strata-toolkit/token-ledger-proxy/` 按同一映射表 git mv（部署面是 git 仓副本与否由主理人确认），换载＝停载→迁移→`switch_proxy.py` 换脑→看门狗热备接管；时机＝无会话安全窗。本票只出方案＋映射表＋start-proxy.bat/proxy_launch 同构项。
+- **H-1｜部署面同构迁移＋换载时序（人工闸②）**：`D:/Strata-toolkit/token-ledger-proxy/` 按同一映射表 git mv（部署面是 git 仓副本与否由主理人确认），换载＝停载→迁移→`switch_proxy.py` 换脑→看门狗热备接管；时机＝无会话安全窗。本票只出方案＋映射表＋start-proxy.bat/proxy_launch 同构项。**同窗原子清单（v2/Y-3 补行）**＝映射表全部件＋启动夹 VBS（H-2）＋**`run-ledger-watchdog.bat`（部署面人工重启链件，路径引用须与迁移同窗随动——v1 仅在健康账 3 顺带提及，未入原子清单）**＋config 准入面（proxy_launch 同构项）＝同窗内逐一核销，任一滞后即断链。
 - **H-2｜启动夹实装 VBS 改法执行时点**：`pkg & "\gateway\ledger_watchdog.py"` 一行改法已出（②-0 F）；与 H-1 同窗执行（VBS 改早于部署面迁移＝下次登录起看门狗找不到脚本静默失败；改晚于＝中间窗仍指旧路径但旧件已迁＝同样失败——**必须与 H-1 同窗原子执行，此序为硬约束**）。
 - **H-3｜legacy/README.md 归属终裁**：票面样张＝迁 docs/（A-8）。留守则 legacy/README.md 原位，映射表 17 撤。
 - **H-4｜`sources/` 人类域是否建**：STRUCTURE 六目之一按实态裁＝本仓无外部投料流，票面建议**不建**（S-12 已按不建成稿）；若要建＝S-12 ①目补一行＋`.gitignore` 视情况补条目（另走本票修票）。
 - **H-5｜config.template.json 仓根例外终裁**：白名单八件恰集下模板留根＝例外（③-1 按"八件＋模板例外"写死）。若裁零例外＝白名单改九件（模板入列）或模板迁 `config-examples/`（连锁：bootstrap :27 TEMPLATE 路径随动一行）。
 - **H-6｜bootstrap --selftest tests/ 前缀修复是否随本票**：票面样张＝随（A-6）；剥离则 S-16 只改 REQUIRED，`--selftest` 既存 FAIL 另开修复票。
 - **H-7｜legacy/ 内旧引用是否随动**：读码＝`legacy/scheduler.py`（:51-53 同目录 import daily_report——legacy 件现无人加载，退役件）、`legacy/comfy_watchdog.py`/`collector_log.py`（文档性提及，无路径加载链）、`legacy/startup_bat_backup_*`（退役备份）。票面建议＝**全部不动**（退役件随迁引用＝给死件续命的语义改动）；若要随动＝另票。
+- **H-8｜start-proxy.bat 仓根归属终裁（v2/D-3 新增＝产品席 R-1 同案）**：该件现居仓根且受版本管理（`git ls-files` 现态 26 件在册含它，票头实读＋v2/D-5 勘正读数），S-1 十七条 git mv 未为其安家；若维持无家状态＝施工后仓根跟踪件＝白名单八＋config.template＋start-proxy.bat＝9≠8，③-1 必自红（抢跑中间态已实跑实证 9 行）。三选一：
+  - **①白名单改九件**：start-proxy.bat 入白名单恰集＋③-1 期望读数同步改九行＋STRUCTURE ④目白名单条款同步。入口级语义成立＝该件为人机同入口（proxy_launch 脚本化补岗，②-0 F 已自证），留根与 start.bat/start.sh 同级自洽。
+  - **②迁 gateway/**：补一条 `git mv start-proxy.bat gateway/`（映射表补行、S-1 命令序列补行、rename 计数 ③-6 随之 18）＋其 :10 `--config "%~dp0config.json"` 锚随改 `..\config.json`（A-1 同锚连锁＝config 仍锚部署根）。
+  - **③根面例外条款**：照 config.template.json 例外同法，例外条款写死进 ③-1（命令加 `grep -v '^start-proxy.bat$'` 后恰八行）＋STRUCTURE ④目登记例外。
+  票面不预设；③-1/S-1/S-8/③-6 的联动改法已在对应行按三选一分别标注，放行裁定后按裁项收口。
 
 ## 健康账登记（回流素材）
 
@@ -274,7 +283,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 4. **`watchdog-console.bat` 标题/echo 显示 `watchdog-launcher.py` 所在域暗示仓根**：迁移后 cd 到 gateway 的显示文案与 ③-11 字节纪律共存，无功能影响。
 5. **`/capabilities.registry.looked_at` 对外读数随路径变**（④登记）：NAS 消费侧若对该字符串有等值断言需知会（主理人对接面）。
 6. **母本仓根无 config.json**（bootstrap --check exit 2 实跑）＝母本为开发态母本仓实态；③-3/③-5 用 throwaway config 并测毕清除（③-5 末判据）。
-7. **bootstrap `--selftest` 三套路径无 tests/ 前缀＝现仓即 FAIL**（既存缺陷，S-16/H-6/A-6）。
+7. **bootstrap `--selftest` 三套路径无 tests/ 前缀＝现仓即 FAIL**（既存缺陷，S-16/H-6/A-6）——**实跑登记（v2/Y-4 措辞统一：审计席已实跑复现＝exit 1、三套 can't open file；v1 在 ③-3 处的"读码推断/未实跑"措辞作废，两处统一为实证）**。
 8. **`legacy/startup_bat_backup_20261123/` 两件均 .disabled/.fromStartup**＝启动夹历史处置备份（ROOTCLEAN-1123 前奏的落点），不在任何启动链，本票零触碰。
 
 ## 可施工性判定（架构席自评）
@@ -282,6 +291,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 - 全部随动点实读在册：paths :20/:31/:35-37；watchdog :80-89/:117-137/:700；switch :44-47/:175-199/:202-214；collector :71-76/:446-455/:1118-1126/:84；monitor_ext :43/:588-615；monitor.html :13/:21/:109；daily :19/:23；html :25/:311-337；六套定位行逐套（②-0 G）；启动族逐件（②-0 F，GBK/CRLF/BOM 字节面 iconv/python 实核）；service 三件逐行；启动夹实装件只读；两域 config 只读对拍；六套基线当轮全实跑（46/31/57/15/6/18）。
 - 判别力自评：③-1 对"仓根长出第 9 件"判红；③-2 对"借迁移改断言"判红（套数锁）；③-6/③-7 对"漏 mv／越领地／cp 代 mv（rename 计数缺）"判红；③-8 对"collector 顺手改功能行／bump 版本"判红；③-9 对"前端/数据件被改字节"判红；③-10 对"config 面被触"判红；③-11 对"GBK 件写成 UTF-8／BOM 丢失"判红；③-5 对"A-1 锚漂移（flag 落 gateway/logs 落 gateway）"判红。
 - 未实跑面（留施工/QA）：throwaway 三面 curl 首跑；看门狗 `--cycles 2` 探针首跑；bootstrap 修复后 --selftest 首跑；③-8 grep 白名单对注释行的误报率（若命中，回执贴读数＋人工目检注记，判据不放宽）。
-- **判定＝可施工**，无阻塞点；放行＝主理人程序确认＋H-1～H-7 随放行件裁定。本票 v1 起草不启施工，起草全程零 git 写、零仓外写（除本票文件与 .collab 治理域）。
+- **判定＝可施工**，无阻塞点；放行＝主理人程序确认＋H-1～H-8 随放行件裁定（v2/D-3 增 H-8）。本票 v1 起草不启施工，v1/v2 全程零 git 写、零仓外写（除本票文件与 .collab 治理域）。
 
-—— 架构席 · OPS-1123-ROOTLAYOUT-T1 v1 · 开端 HEAD 实测 `98520fdc26447854e8c243a542448bdb177915b7` · 起草实核居本仓 .collab/ · 2026-11-23
+—— 架构席 · OPS-1123-ROOTLAYOUT-T1 v2（双席审票收口修票令升版）· v1 开端 HEAD 实测 `98520fdc26447854e8c243a542448bdb177915b7` · 起草实核居本仓 .collab/ · 2026-11-23
