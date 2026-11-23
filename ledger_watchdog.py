@@ -487,7 +487,18 @@ def guard_cycle(services, states, log_fn, cooldown, now, gens=None):
         if dep_port:
             dep_gen = gens.get(dep_port, 0)
             if st["synced_gen"] != dep_gen:
-                if st["gen_pending"] != dep_gen:
+                if dep_gen == 0 and port_is_up(LEDGER_HOST, dep_port):
+                    # New watchdog shift, dependency already running: it was
+                    # never relaunched THIS shift (gen 0), so the boot ordering
+                    # was satisfied by whoever booted it. A fresh shift must
+                    # NOT owe a retroactive stabilize window (user ruling
+                    # 2026-11-24: LLM backend never restarted, no stabilize
+                    # debt). Adopt the generation and go straight to launch.
+                    st["synced_gen"] = dep_gen
+                    st["gen_pending"] = None
+                    st["dep_met_at"] = None
+                    st["waiting_since"] = None
+                elif st["gen_pending"] != dep_gen:
                     st["gen_pending"] = dep_gen
                     st["dep_met_at"] = None
                     st["waiting_since"] = now
