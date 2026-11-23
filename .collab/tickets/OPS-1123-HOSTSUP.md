@@ -1,4 +1,4 @@
-﻿ OPS-1123-HOSTSUP 看门狗管辖收缩：ComfyUI 侧只管面门门
+ OPS-1123-HOSTSUP 看门狗管辖收缩：ComfyUI 侧只管面门门
 Status: 实施中（用户 2026-11-23 裁示，配奔对方仓 TK-F-20261123-2）
 
 【裁示】
@@ -13,3 +13,10 @@ guard_services 里 comfyui-full/comfy-tv 两条把 ComfyUI 分段网关的编排
 - watchdog-launcher.py docstring、watchdog-console.bat 横幅同步。
 - 旧链参数（RAM 错峰 600s/300s、stabilize）由面门监护线程接班：
   全局错峰 120s + ram_free_th 水位线闸门，只在对方档案里存活。
+
+【rev2（用户二次裁示）】
+看门归看门，该看谁由网关传达：facade 条目挂 watch_url=http://127.0.0.1:8188/watchlist
++ family=comfyui；看门狗按清单逐项探活/代拉（脚本自包含、自带单实例闸）。
+清单实例级顺序剥离（wait_for 强制清空）。看门狗唯一自调的分步 = 类型级安全启动：
+comfyui 族条目 wait_for 注入引擎端口（8787）+ stabilize≥60s；LLM 族内部不动。
+config.json 每周期重读，改动即时生效。

@@ -2,10 +2,13 @@
 
 ONE watchdog covers everything: the 8080 proxy, the 8787 engine (legacy keys)
 and every entry in config.json "guard_services". On the ComfyUI side the ONLY
-entry is the split-gateway facade door (8188): instance order, placement and
-timing are the gateway's own business (it self-launches its A/B hosts from its
-own profile, ticket TK-F-20261123-2). The watchdog only opens the door; it
-never orchestrates what stands behind it (user ruling 2026-11-23, OPS-1123-HOSTSUP).
+config entry is the split-gateway facade door (8188). WHO to guard is handed
+to the watchdog by the gateway itself: the door carries watch_url and the
+gateway publishes its family as self-contained launch-script entries via
+GET /watchlist (ticket TK-F-20261123-2). The watchdog probes and relaunches
+from that list; instance order inside the list is advisory and stripped.
+The only sequencing the watchdog holds is type-level safe boot: LLM family
+first, ComfyUI family after (user rulings 2026-11-23, OPS-1123-HOSTSUP rev2).
 
 Window behavior (human request 2026-11-22): boot & manual bat both show the
 live watchdog log. If the watchdog is already running (lock 43176 busy), this
