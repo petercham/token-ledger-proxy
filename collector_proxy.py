@@ -81,7 +81,7 @@ from paths import expand_path        # rev11a A-2: strata_config path flattening
 CANON_INT = ("prompt", "cached", "new_prompt", "gen")
 BODY_ACCUM_CAP = 32 * 1024 * 1024        # stop keeping the private copy past 32 MiB; relay is unaffected
 GATE_DEFAULTS = (0, 10.0, 600.0)         # (max_inflight, queue_beat_s, gate_wait_s); 0 = gate off
-GATEWAY_VERSION = "rev17i"            # self-reported in /capabilities; bump with each functional change
+GATEWAY_VERSION = "rev17k"            # self-reported in /capabilities; bump with each functional change
 # rev11a X-2: FOLLOW_DEFAULTS deleted — the follow default (False) is carried by
 # `c.get("gate_follow") is True` in _gate_params; the poll-seconds key's consumer
 # (the polling thread) is torn out by X-1, so the constant would be dead code.
@@ -496,6 +496,48 @@ def _capabilities_payload(handler):
         "engine_health": engine,
         "benchmarks": bench,
         "server_time": int(time.time()),
+    }
+
+
+def _gateway_status_payload(handler):
+    """OPS-1123-GWSTATUS: GET /gateway/status - unified-status/v0 envelope for
+    the NAS compute pool. Read-only; every reading is gate-local or config-
+    declared, zero upstream I/O. The benchmark-derived speed field has no
+    archive in v1 = key absent, never filled 1.0. gpu_bind/vram_gb come only
+    from the declared config key machine_profile, absent -> null (no infer)."""
+    cfg = handler.cfg
+    machine_id = (cfg.get("machine_id") or "").strip() or socket.gethostname()
+    # listen port: rpartition like main() (:1102) - IPv6 hosts contain colons
+    try:
+        vport = int(str(cfg.get("listen", "")).rpartition(":")[2])
+    except ValueError:
+        vport = None
+    limit, _beat, _wait = _gate_params(handler.cfg_path)       # per-request read
+    snap = handler.gate.snapshot(limit) if handler.gate is not None else None
+    in_flight = snap["inflight"] if snap else 0
+    queued = snap["queued"] if snap else 0                     # live queue length, snapshot-issued
+    slots = None
+    raw_e = cfg.get("engine_launch_config")
+    if raw_e:
+        slots = _strata_parallel_parse(expand_path(raw_e, cfg.get("config_dir")))
+    serving = limit if limit else slots                        # :491 precedent
+    available = (serving - in_flight) if serving else None     # no clamp (A-3)
+    profile = cfg.get("machine_profile") or {}
+    row = {
+        "vport": vport,
+        "engine": cfg.get("engine_backend") or None,
+        "gpu_bind": profile.get("gpu_bind"),
+        "vram_gb": profile.get("vram_gb"),
+        "available": available,
+        "current_tasks": {"in_flight": in_flight, "queued": queued},
+        # benchmark speed field: no archive in v1 = whole field absent (A-6/H-3) — key not written
+    }
+    return {
+        "schema": "unified-status/v0",
+        "machine_id": machine_id,
+        "domain": "llm",
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "ports": [row],
     }
 
 
@@ -952,6 +994,22 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.split("?", 1)[0] in ("/capabilities", "/v1/capabilities"):
             try:
                 body = json.dumps(_capabilities_payload(self)).encode("utf-8")
+            except Exception as e:
+                body = json.dumps({"ok": False, "error": repr(e)}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
+        if self.path.split("?", 1)[0] == "/gateway/status":
+            try:
+                body = json.dumps(_gateway_status_payload(self)).encode("utf-8")
             except Exception as e:
                 body = json.dumps({"ok": False, "error": repr(e)}).encode("utf-8")
             self.send_response(200)

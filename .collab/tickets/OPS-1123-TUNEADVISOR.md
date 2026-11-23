@@ -23,3 +23,11 @@ Strata 有搜索式自动调优器（tune auto，代价 20min–2h）；Basalt �
 引擎重启/换 exe 属 Basalt 运行面待办（引擎升级窗口）；ram-reserve 2048 生效挂在下次引擎重启。
 
 Status: 已立案，T0 可即刻开工（纯本仓写），T2 待停服窗口随 rev 拍。
+
+## 追记 rev-addendum-1（2026-11-23 19:29，同源合并登记）
+来源＝Basalt 会话统一交接件 GATEWAY-HANDOFF-20261123（上篇＝本票来源 TUNEADVISOR-handoff 的扩展重发＋19:2x 增补节；下篇另立 OPS-1123-LOADSWEEP）。
+副本钉值＝本仓 .collab/drafts/GATEWAY-HANDOFF-20261123.md，sha256＝91cee3f4605875af12ebba438cb0f99b3a23a709681eea342815cf7e2a62867b（11,233 字节），登记时仓 HEAD＝83f041d。原件在对方会话（用户持转），未取钉。
+防双开条款＝本票与 OPS-1123-LOADSWEEP 同源互引，上篇内容只在本票演进，不得在 LOADSWEEP 侧重复立项。
+增补节对本票的效力＝§三新增价值点即 T2/T3 的输入扩展（槽数/档长非常数→建议档位须含"扫描计划"取向，见下篇票）；T0 经验档案须收增补节方法学要点（session-id 独立、语料偏移防前缀缓存互吃、分段计时、A/B 冷启动）。
+用户裁定留痕（19:2x，主理人誊录）：「bench 归终端，压测归网关」。
+Status 更新：T0 开工判据不变；增补节三标量契约部分归 LOADSWEEP T1，勿在本票重复实现。

@@ -1,4 +1,15 @@
 ﻿# 版本改动登记（CHANGELOG）
+## rev17k (2026-11-23) · OPS-1123-GWSTATUS
+- 新增只读路由 `GET /gateway/status`（unified-status/v0·NAS 算力池对接）：envelope 五字段（schema/machine_id/domain/generated_at/ports）＋ports 行契约（vport/engine/gpu_bind/vram_gb/available/current_tasks）；`available = serving − Gate.inflight` 进程内合成（serving＝闸 limit 或引擎启动配置槽位，皆不可得→null）；speed_bias 无档案＝整字段缺席（v1 一律缺席，不填 1.0）；gpu_bind/vram_gb 只认 config 可选键 `machine_profile` 申报，缺位 null（不推断）；machine_id＝config 可选键，空/缺退 `socket.gethostname()`。只读：零 upstream 流量、零账本行、零 gate 事件，沿 /health 无鉴权先例。
+- selftest 两条入册：`tests/selftest_gateway_status.py`（新增·import 直调桩法·GS-1～GS-5·18/18）＋`tests/selftest_proxy.py` 新增在岗用例 `T-GS:route /gateway/status live shape`（45→46）。
+- `GATEWAY_VERSION` rev17i→rev17k（rev17j 已被 DOCSRENAME 拍占用＝网关代码零改动拍；本票实变更新取 rev17k）。`/capabilities` 的 gateway.version 自动跟随。
+- 既有路由零改（/health、/ext.json、/capabilities、/monitor*、/v1/*）；四套回归不回归：proxy 46/46、watchdog 31 passed 0 failed、monitor 57/57、daily_report 15/15（辅套 registry 6/6 旁证）。
+
+## registry-contract-v2 (2026-11-23) · OPS-1123-LOADSWEEP-T1（registry 契约扩展 · 不占 rev 号）
+- `benchmark-registry.json`：契约扩展＝顶层 `schema_version: 2`＋`contract_note`（layer 行族语义自述：anchor/map/calibration）；两条既有 `bench-6x256k-v1` 记录迁移为 map 行，尾部追加 `layer`/`template_id`/`model_pack`/`engine_version`/`scalars`(三槽位全 null)/`scalars_note` 六键；全部旧键旧值字节冻结（append-only）。
+- `tests/selftest_registry.py` 入册：schema 校验＋旧值不变锁＋/capabilities 响应结构与透传锁（import 直调桩 handler，不起服务、不触在岗端口），6/6。
+- `/capabilities` 响应结构不变（registry 整包透传）；网关代码 diff＝0 行，`GATEWAY_VERSION` 不动（不占 rev 号）。
+
 ## rev17j (2026-11-23)
 - `SKILL.md` → `INSTALL.md`（git rename）：该文件是给任意操作者（人类或宿主 Agent）的仓根部署工序文档，命名与 Strata 官方 INSTALL.md 对齐；原名易被误解为「依赖 Agent 平台环境的通用 skill 工具」。同时摘除 frontmatter（name/description/agent_created——平台 skill 装载器的标志物，本包不发布为平台 skill）。正文开头加声明：本文件不是 skill 包；运行时对 Agent 平台零依赖（依赖方向刻意单向，不得逆转）。
 - `README.md`「Agent 部署入口」节引用同步改名。
