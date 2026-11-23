@@ -311,9 +311,9 @@ def _validate_guard_item(item, config_dir):
                    if isinstance(item.get("family"), str) else None),
         "watch_url": (item.get("watch_url")
                       if isinstance(item.get("watch_url"), str) else None),
-        # per-item switch (user ruling 2026-11-24): false = planned downtime,
-        # the watchdog leaves it alone; default true.
-        "enabled": item.get("enabled") is not False,
+        # per-item switch, 0/1 or false/true (user ruling 2026-11-24):
+        # off = planned downtime, the watchdog leaves it alone; default ON.
+        "enabled": item.get("enabled", 1) not in (0, False, "0", "false", "off"),
     }
 
 
@@ -713,6 +713,38 @@ def parse_args():
     return ap.parse_args()
 
 
+def apply_type_gate(services):
+    """Roster mode (user ruling 2026-11-24): ONE config lists every candidate
+    instance — LLM backends AND ComfyUI instances — each with an 0/1 `enabled`
+    switch. Sequencing is type-level only:
+
+      * family "llm": a backend the comfyui family must wait for;
+      * family "comfyui": holds until the FIRST ENABLED llm entry is up and
+        steady (60s); members within a family carry no order at all.
+
+    No enabled llm entry = planned LLM downtime (e.g. night window frees the
+    GPU for a DiT instance): the gate is waived — comfyui entries must not
+    hold for an LLM nobody is bringing up. Entries are the single source of
+    truth; gateways keep their old /watchlist endpoint but the watchdog no
+    longer needs it (its role degrades to probe + forward for the NAS side).
+    Mutates and returns `services`.
+    """
+    llm_ports = [s["port"] for s in services
+                 if s.get("family") == "llm" and s.get("enabled", True)]
+    gate = llm_ports[0] if llm_ports else None
+    for svc in services:
+        if svc.get("family") != "comfyui":
+            continue
+        if gate is not None and svc["port"] != gate:
+            svc["wait_for"] = gate
+            if svc["stabilize_s"] < 60.0:
+                svc["stabilize_s"] = 60.0
+        else:
+            # planned LLM downtime (or self-reference): never hold
+            svc["wait_for"] = None
+    return services
+
+
 def _install_crash_forensics(log_fn):
     """Never die silently: uncaught exceptions and fatal signals go to the
     watchdog log BEFORE the process exits (silent deaths 2026-11-23/24 were
@@ -848,6 +880,12 @@ def main():
         # ---- engine guard (rev17d; default off = nothing below ever runs) ----
         try:
             guard, backend, ecmd, ecwd, grace, eport = read_engine_settings(args.config)
+            # roster mode (2026-11-24): when guard_services already carries an
+            # entry for the engine port, the engine is guarded as a normal
+            # roster item — skip the legacy engine block so nothing ever
+            # double-launches it.
+            if guard and ecmd and eport in {x["port"] for x in read_guard_services(args.config)}:
+                guard = False
             if guard and ecmd:
                 if (guard, backend, eport) != last_engine_settings:
                     log_fn(f"engine guard settings: backend={backend or 'unlabelled'} "
@@ -882,10 +920,6 @@ def main():
             # ---- watchlist hand-off (OPS-1123-HOSTSUP rev2): doors that
             # publish watch_url hand the watchdog THEIR family list.
             noww = time.monotonic()
-            try:
-                eguard_now, _, _, _, _, eport_now = read_engine_settings(args.config)
-            except Exception:
-                eport_now = eport0
             extra = []
             for door in services:
                 url = door.get("watch_url")
@@ -913,19 +947,12 @@ def main():
                             e["family"] = door.get("family")
                         extra.append(e)
             services = services + extra
-            # ---- type-level safe boot: the ONLY sequencing the watchdog
-            # holds for guarded services. A "comfyui"-family entry starts
-            # only after the LLM engine (eport) is up and steady; members
-            # within the family carry no order at all (self-contained
-            # scripts + their own single-instance gates).
-            # Engine guard switched off (guard_engine not true) = planned
-            # engine downtime: waive the LLM-first gate entirely — comfyui
-            # members must not hold for an engine nobody is bringing up.
-            for s in services:
-                if s.get("family") == "comfyui" and eport_now and eguard_now:
-                    s["wait_for"] = eport_now
-                    if s["stabilize_s"] < 60.0:
-                        s["stabilize_s"] = 60.0
+            # ---- type-level safe boot (roster mode, user ruling 2026-11-24):
+            # the ONLY sequencing the watchdog holds. A "comfyui"-family
+            # entry starts only after an ENABLED "llm"-family roster entry is
+            # up and steady. No enabled LLM entry = planned LLM downtime
+            # (night DiT swap): the gate is waived entirely.
+            apply_type_gate(services)
             names = [(s["name"], s["port"]) for s in services]
             if names != last_guard_names:
                 if last_guard_names is not None:

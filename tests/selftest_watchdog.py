@@ -108,6 +108,29 @@ def main():
     rec("broken config does not crash", wd.read_settings(cfg) == (5.0, 5.0))
     rec("port_is_up on a closed port is False", wd.port_is_up("127.0.0.1", PORT) is False)
 
+    print("=== roster type-gate checks (2026-11-24 ruling) ===")
+    def _ent(name, port, family, enabled=1):
+        return {"name": name, "port": port, "family": family,
+                "enabled": enabled, "wait_for": None, "stabilize_s": 0.0}
+    svc = [_ent("basalt", 8787, "llm"), _ent("comfy-A", 20003, "comfyui")]
+    wd.apply_type_gate(svc)
+    rec("enabled llm gates comfyui",
+        svc[1]["wait_for"] == 8787 and svc[1]["stabilize_s"] >= 60.0,
+        str(svc[1]))
+    svc = [_ent("basalt", 8787, "llm", enabled=0),
+           _ent("comfy-A", 20003, "comfyui")]
+    wd.apply_type_gate(svc)
+    rec("llm switched 0 -> gate waived for comfyui",
+        svc[1]["wait_for"] is None, str(svc[1]))
+    svc = [_ent("comfy-A", 20003, "comfyui"), _ent("comfy-B", 20004, "comfyui")]
+    wd.apply_type_gate(svc)
+    rec("no llm entry at all -> both waived, no order among members",
+        svc[0]["wait_for"] is None and svc[1]["wait_for"] is None)
+    svc = [_ent("dit", 20005, "comfyui")]
+    wd.apply_type_gate(svc)
+    rec("comfyui entry never waits for another comfyui entry",
+        svc[0]["wait_for"] is None)
+
     print("=== engine guard unit checks (rev17) ===")
     write_cfg()
     g = wd.read_engine_settings(cfg)
