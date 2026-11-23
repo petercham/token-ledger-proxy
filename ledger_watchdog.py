@@ -247,12 +247,72 @@ def _bounded_range(value, fallback, lo, hi):
     return v
 
 
+def _validate_guard_item(item, config_dir):
+    """Validate ONE guard entry (from config.json or a fetched watchlist).
+    Missing/broken pieces drop the single entry, never raise."""
+    if not isinstance(item, dict):
+        return None
+    name = str(item.get("name") or "").strip()
+    port = item.get("port")
+    launch = item.get("launch")
+    if not name or not isinstance(port, int) or not 1 <= port <= 65535:
+        return None
+    argv = None
+    run_cwd = ""
+    if isinstance(launch, dict):
+        raw_argv = launch.get("cmd")
+        if (isinstance(raw_argv, list) and raw_argv
+                and all(isinstance(t, str) and t.strip() for t in raw_argv)):
+            argv = list(raw_argv)
+        raw_run = launch.get("cwd")
+        if isinstance(raw_run, str) and raw_run.strip():
+            try:
+                from paths import expand_path
+                run_cwd = expand_path(raw_run, config_dir)
+            except Exception:
+                run_cwd = ""
+    if not argv:
+        return None
+    cooldown = item.get("cooldown_s")
+    wait_for = item.get("wait_for")
+    return {
+        "name": name,
+        "port": port,
+        "cmd": argv,
+        "cwd": run_cwd,
+        "grace_s": _bounded_range(item.get("grace_s", DEFAULT_SVC_GRACE_S),
+                                  DEFAULT_SVC_GRACE_S, 1.0, MAX_SVC_S),
+        "cooldown_s": (_bounded_range(cooldown, None, 1.0, MAX_SVC_S)
+                       if cooldown is not None else None),
+        "wait_for": (wait_for if isinstance(wait_for, int)
+                     and 1 <= wait_for <= 65535 else None),
+        "stabilize_s": _bounded_range(
+            item.get("stabilize_s", DEFAULT_SVC_STABILIZE_S),
+            DEFAULT_SVC_STABILIZE_S, MIN_SVC_S, MAX_SVC_S),
+        "wait_timeout_s": _bounded_range(
+            item.get("wait_timeout_s", DEFAULT_SVC_WAIT_TIMEOUT_S),
+            DEFAULT_SVC_WAIT_TIMEOUT_S, 1.0, MAX_SVC_S),
+        "dep_timeout_action": (item.get("dep_timeout_action")
+                               if item.get("dep_timeout_action")
+                               in ("hold", "launch") else "hold"),
+        "family": (str(item.get("family"))
+                   if isinstance(item.get("family"), str) else None),
+        "watch_url": (item.get("watch_url")
+                      if isinstance(item.get("watch_url"), str) else None),
+    }
+
+
 def read_guard_services(config_path):
     """Parse config.json "guard_services" into validated entries.
 
-    Returns a list of dicts {name, port, cmd, cwd, grace_s, cooldown_s,
-    wait_for, stabilize_s, wait_timeout_s}. Missing/broken pieces drop the
-    single entry (or the whole list), never an exception.
+    User ruling 2026-11-23 (OPS-1123-HOSTSUP rev2): who to guard is handed
+    to the watchdog by the gateways themselves. A door entry may carry
+    "watch_url" (loopback http) -- the gateway behind that door publishes
+    its family members as self-contained launch-script entries via
+    GET /watchlist. "family" names the backend TYPE (e.g. "comfyui"); the
+    type-level safe-boot gate (LLM family first, ComfyUI family after) is
+    the ONLY sequencing the watchdog holds for guarded services. Entries
+    are parsed fresh every cycle; a broken entry is skipped.
     """
     try:
         with open(config_path, encoding="utf-8") as f:
@@ -267,50 +327,51 @@ def read_guard_services(config_path):
     config_dir = os.path.dirname(os.path.abspath(config_path))
     out = []
     for item in raw:
-        if not isinstance(item, dict):
-            continue
-        name = str(item.get("name") or "").strip()
-        port = item.get("port")
-        launch = item.get("launch")
-        if not name or not isinstance(port, int) or not 1 <= port <= 65535:
-            continue
-        argv = None
-        run_cwd = ""
-        if isinstance(launch, dict):
-            raw_argv = launch.get("cmd")
-            if (isinstance(raw_argv, list) and raw_argv
-                    and all(isinstance(t, str) and t.strip() for t in raw_argv)):
-                argv = list(raw_argv)
-            raw_run = launch.get("cwd")
-            if isinstance(raw_run, str) and raw_run.strip():
-                try:
-                    from paths import expand_path
-                    run_cwd = expand_path(raw_run, config_dir)
-                except Exception:
-                    run_cwd = ""
-        if not argv:
-            continue
-        cooldown = item.get("cooldown_s")
-        wait_for = item.get("wait_for")
-        out.append({
-            "name": name,
-            "port": port,
-            "cmd": argv,
-            "cwd": run_cwd,
-            "grace_s": _bounded_range(item.get("grace_s", DEFAULT_SVC_GRACE_S),
-                                      DEFAULT_SVC_GRACE_S, 1.0, MAX_SVC_S),
-            "cooldown_s": (_bounded_range(cooldown, None, 1.0, MAX_S)
-                           if cooldown is not None else None),
-            "wait_for": (wait_for if isinstance(wait_for, int)
-                         and 1 <= wait_for <= 65535 else None),
-            "stabilize_s": _bounded_range(
-                item.get("stabilize_s", DEFAULT_SVC_STABILIZE_S),
-                DEFAULT_SVC_STABILIZE_S, MIN_SVC_S, MAX_SVC_S),
-            "wait_timeout_s": _bounded_range(
-                item.get("wait_timeout_s", DEFAULT_SVC_WAIT_TIMEOUT_S),
-                DEFAULT_SVC_WAIT_TIMEOUT_S, 1.0, MAX_SVC_S),
-        })
+        ent = _validate_guard_item(item, config_dir)
+        if ent:
+            out.append(ent)
     return out
+
+
+WATCHLIST_REFRESH_S = 60.0
+_last_watchlist_err = [0.0]
+
+
+def fetch_watchlist(url, config_dir, log_fn):
+    """GET a gateway's watchlist; loopback only, proxy bypassed.
+
+    Instance-level ordering in the response is ADVISORY and stripped here
+    (wait_for forced off): scripts are self-contained and hold their own
+    single-instance gate, so relaunch order among family members does not
+    matter. The family/type gate is applied by the caller from config.
+    Returns validated entries, or None on any failure (list unchanged).
+    """
+    from urllib.request import build_opener, ProxyHandler
+    from urllib.parse import urlparse
+    u = urlparse(url)
+    if u.scheme != "http" or u.hostname not in ("127.0.0.1", "localhost"):
+        return None
+    opener = build_opener(ProxyHandler({}))
+    try:
+        with opener.open(url, timeout=3.0) as r:
+            data = json.loads(r.read().decode("utf-8", "replace"))
+    except Exception as exc:
+        now = time.monotonic()
+        if now - _last_watchlist_err[0] >= 120:
+            log_fn("watchlist fetch failed (%s): %s" % (url, exc))
+            _last_watchlist_err[0] = now
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("services"),
+                                                    list):
+        return None
+    out = []
+    for item in data["services"]:
+        ent = _validate_guard_item(item, config_dir)
+        if ent:
+            ent["wait_for"] = None
+            out.append(ent)
+    return out
+
 
 def read_proxy_launch(config_path):
     """Optional config key "proxy_launch": relaunch the 8080 proxy through a
@@ -668,6 +729,8 @@ def main():
         log_fn("engine guard off (guard_engine not true in config)")
     services0 = read_guard_services(args.config)
     states = {}
+    watch_cache = {}
+    config_dir = os.path.dirname(args.config)
     last_guard_names = None
     if services0:
         log_fn("guard_services: " + ", ".join(
@@ -750,6 +813,43 @@ def main():
         # through its OWN launch script; config read fresh every cycle ----
         try:
             services = read_guard_services(args.config)
+            # ---- watchlist hand-off (OPS-1123-HOSTSUP rev2): doors that
+            # publish watch_url hand the watchdog THEIR family list.
+            noww = time.monotonic()
+            try:
+                _, _, _, _, _, eport_now = read_engine_settings(args.config)
+            except Exception:
+                eport_now = eport0
+            extra = []
+            for door in services:
+                url = door.get("watch_url")
+                if not url:
+                    continue
+                cache = watch_cache.setdefault(door["name"],
+                                               {"t": 0.0, "list": None})
+                if port_is_up(LEDGER_HOST, door["port"]) and (
+                        noww - cache["t"] >= WATCHLIST_REFRESH_S
+                        or cache["list"] is None):
+                    got = fetch_watchlist(url, config_dir, log_fn)
+                    if got is not None:
+                        cache["t"] = noww
+                        cache["list"] = got
+                if cache["list"]:
+                    for e in cache["list"]:
+                        e = dict(e)
+                        e.setdefault("family", door.get("family"))
+                        extra.append(e)
+            services = services + extra
+            # ---- type-level safe boot: the ONLY sequencing the watchdog
+            # holds for guarded services. A "comfyui"-family entry starts
+            # only after the LLM engine (eport) is up and steady; members
+            # within the family carry no order at all (self-contained
+            # scripts + their own single-instance gates).
+            for s in services:
+                if s.get("family") == "comfyui" and eport_now:
+                    s["wait_for"] = eport_now
+                    if s["stabilize_s"] < 60.0:
+                        s["stabilize_s"] = 60.0
             names = [(s["name"], s["port"]) for s in services]
             if names != last_guard_names:
                 if last_guard_names is not None:
