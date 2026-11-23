@@ -56,3 +56,16 @@ R-5 动作诉求（轻微）：commit-audit 提交身份仅席位 spawn 链注�
 已登记（本件落盘＋本段登记＝我域义务面完成态）。已投递／已消费归投递窗与领办面回注；本件无回流票链消费。
 
 状态行：2026-11-23 已登记
+
+【修订二（同日 15:4x，用户三裁：工作面纪律重申）】
+1. 投递对象更正：领办域＝维护 baigong-software-experts 的会话/工作面（不在本会话）。
+   本会话工作面＝token-ledger-proxy（反代网关），对 baigong 包安装面零写。
+2. 施工自纠备案：成文后本会话曾短暂在写侧守卫脚本打入 R-2/R-3/R-4 补丁（约数分钟），
+   经用户纠正已全部回滚——两处安装面（marketplace＋cache）已用 v0.1.36 zip 原件还原，
+   sha256 与 COPY.state 登记值逐字节比对一致（00726ea…31e8，match=True）。
+3. 附件化交付：R-2/R-3/R-4 可应用修复以 unified diff 随单移交维护面，
+   落位本包 .collab/decisions/EXT-2026-11-23-R234-write-guard-patch.diff
+   （git-blob ＝ f591c822cd8bac3c7d2924d1a7383c87b943ecdc·43 行·对 zip 原件 CRLF 生成·补丁态源已 ast 编译自检）。
+   维护面可直接 git apply 后走其校验/注册/发版链。
+4. hooks 面（R-1）补丁态维持现状（用户此前指示的临时补丁），发版修复后随升级覆盖，随动账登记义务在册。
+状态行：2026-11-23 已登记（附件齐·投递归维护 baigong-software-experts 会话）

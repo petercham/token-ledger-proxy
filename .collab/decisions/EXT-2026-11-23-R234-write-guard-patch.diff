@@ -1,0 +1,43 @@
+--- baigong-software-team/skills/sop/scripts/write-guard.py
++++ baigong-software-team/skills/sop/scripts/write-guard.py
+@@ -254,9 +254,38 @@
+         if fs.get("deny_all_writes"):
+             return False, f"B10 freeze 态全写 deny（seat={seat} path={rel}）"
+ 
++    # EXPERT-PATCH 2026-11-23（EXT 件 R-2/R-3/R-4，按 EXT-2026-11-23-百工插件面单缺陷-v1）
++    # R-3：宿主自有区白名单——~/.workbuddy/**（用户级长期记忆/配置区）非项目领地，守卫不守。
++    _raw = str(file_path).replace("\\", "/")
++    _home = os.path.expanduser("~").replace("\\", "/").lower()
++    if _raw.lower().startswith(_home + "/.workbuddy/"):
++        return True, "宿主自有区（~/.workbuddy/**）白名单放行（R-3）"
++
++    # R-4：跨工作面写闸门——写目标落在另一 git 仓根内（≠本项目根）即拒，明示目标仓根；
++    # 跨面施工须用户明确授权或由该面会话执行。
++    _tp = os.path.abspath(_raw)
++    _d = _tp if os.path.isdir(_tp) else os.path.dirname(_tp)
++    _other = None
++    while True:
++        if os.path.exists(os.path.join(_d, ".git")):
++            _other = _d
++            break
++        _p = os.path.dirname(_d)
++        if _p == _d:
++            break
++        _d = _p
++    if _other and os.path.normcase(_other) != os.path.normcase(repo_root()):
++        return False, (f"跨工作面写：目标位于另一 git 仓（{_other}），不在本会话工作面 → deny；"
++                       "跨面施工须用户明确授权或由该面会话执行（R-4）")
++
+     if seat is None:
+-        # fail-closed：席位不可归因即拒（写侧校验不猜身份）
+-        return False, f"席位不可归因（agent_type={identity.get('agent_type')!r} agent_id={identity.get('agent_id')!r}）→ deny"
++        # R-2：无席位会话降级——本域登记面 .collab/** 放行（保「发现方成文/开票」出路），
++        # 其余写仍 fail-closed，但 deny 附可执行出路指引。
++        if rel == ".collab" or rel.startswith(".collab/"):
++            return True, "无席位会话登记面（.collab/**）降级放行（R-2 出路）"
++        return False, (f"席位不可归因（agent_type={identity.get('agent_type')!r} agent_id={identity.get('agent_id')!r}）→ deny；"
++                       "出路：本域登记/草稿写 .collab/tickets|decisions|drafts/（已放行）；"
++                       "业务代码须经席位链会话（seat spawn）或由用户人工处理")
+ 
+     # deny_globs 命中＝表2-1「明确不可写」列（U2/G1）
+     for row in cfg.get("seats", []):
