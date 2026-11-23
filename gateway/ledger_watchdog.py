@@ -78,10 +78,11 @@ import traceback
 from datetime import datetime
 
 # ---- Resolve everything from this file; no absolute paths baked in ----------
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)              # find paths.py however this module is loaded
-CONFIG_PATH = os.path.join(HERE, "config.json")
-LOG_DIR = os.path.join(HERE, "logs")           # rev17h: every log file lives under logs/
+HERE = os.path.dirname(os.path.abspath(__file__))          # gateway/
+PKG_ROOT = os.path.dirname(HERE)                            # 包根＝config/logs/flag 锚
+sys.path.insert(0, HERE)              # find paths.py (同目录 gateway/; paths.py lives in this dir)
+CONFIG_PATH = os.path.join(PKG_ROOT, "config.json")
+LOG_DIR = os.path.join(PKG_ROOT, "logs")           # rev17h: every log file lives under logs/
 LOG_PATH = os.path.join(LOG_DIR, "ledger-watchdog.log")
 os.makedirs(LOG_DIR, exist_ok=True)
 CHILD_LOG_NAME = "collector-proxy.log"   # the proxy's own console output

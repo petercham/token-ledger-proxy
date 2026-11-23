@@ -8,7 +8,7 @@
   <array>
     <!-- 改成实际 python3 与解压目录 -->
     <string>/usr/bin/python3</string>
-    <string>/opt/token-ledger-proxy/ledger_watchdog.py</string>
+    <string>/opt/token-ledger-proxy/gateway/ledger_watchdog.py</string>
   </array>
   <key>WorkingDirectory</key>
   <string>/opt/token-ledger-proxy</string>

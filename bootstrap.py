@@ -24,15 +24,18 @@ except Exception:
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)          # find paths.py however this module is loaded
+sys.path.insert(0, os.path.join(HERE, "gateway"))
 TEMPLATE = os.path.join(HERE, "config.template.json")
 CONFIG = os.path.join(HERE, "config.json")
 
 REQUIRED = (
-    "collector_proxy.py", "monitor_ext.py", "monitor.html", "monitor.js",
-    "monitor.css", "monitor-sprite.svg",
-    "ext.js", "daily_report.py", "html_report.py", "ledger_watchdog.py",
-    "switch_proxy.py", "selftest_proxy.py", "selftest_watchdog.py",
-    "selftest_monitor.py", "selftest_daily_report.py", "paths.py",
+    "gateway/collector_proxy.py", "monitor/monitor_ext.py", "monitor/monitor.html",
+    "monitor/monitor.js",
+    "monitor/monitor.css", "monitor/monitor-sprite.svg",
+    "monitor/ext.js", "reporting/daily_report.py", "reporting/html_report.py",
+    "gateway/ledger_watchdog.py",
+    "gateway/switch_proxy.py", "tests/selftest_proxy.py", "tests/selftest_watchdog.py",
+    "tests/selftest_monitor.py", "tests/selftest_daily_report.py", "gateway/paths.py",
 )
 
 
@@ -203,7 +206,7 @@ def do_check():
 
 def do_selftest():
     total_fail = 0
-    for name in ("selftest_proxy.py", "selftest_watchdog.py", "selftest_monitor.py"):
+    for name in ("tests/selftest_proxy.py", "tests/selftest_watchdog.py", "tests/selftest_monitor.py"):
         print("\n=== %s ===" % name)
         try:
             r = subprocess.run([sys.executable, os.path.join(HERE, name)],

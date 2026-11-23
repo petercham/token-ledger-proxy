@@ -20,7 +20,7 @@ import time
 
 # Resolve from this file: works unchanged on Windows / Linux / macOS.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # tests/ -> project root
-WD_SCRIPT = os.path.join(ROOT, "ledger_watchdog.py")
+WD_SCRIPT = os.path.join(ROOT, "gateway", "ledger_watchdog.py")
 PORT = 19080
 EPORT = 19090
 LOCK = 43976

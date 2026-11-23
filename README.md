@@ -105,12 +105,12 @@ python bootstrap.py --check
 
 | 平台 | 交互式试跑（仅验证包能用） | 生产必须装 |
 |---|---|---|
-| Windows | 双击 `start.bat`，或命令行 `python ledger_watchdog.py` | **启动夹里放一个指向** `service-examples/Token ledger watchdog.vbs` **的快捷方式**（VBS 本身留在包目录，不要复制过去） |
+| Windows | 双击 `start.bat`，或命令行 `python gateway/ledger_watchdog.py` | **启动夹里放一个指向** `service-examples/Token ledger watchdog.vbs` **的快捷方式**（VBS 本身留在包目录，不要复制过去） |
 | Linux | `bash start.sh`（或先 `chmod +x start.sh` 再 `./start.sh`） | `service-examples/token-ledger.service`（systemd，`Restart=always`） |
 | macOS | `bash start.sh`（或先 `chmod +x start.sh` 再 `./start.sh`） | `service-examples/com.token.ledger.plist`（launchd，`KeepAlive`） |
 | 开机自启 | 不适用 | Windows 启动夹里放 VBS 的快捷方式；Linux systemd；macOS launchd |
 
-**启动逻辑只有一条**：先起守护进程，由守护进程把服务拉起来。不要在启动脚本里直接 `python collector_proxy.py`——那样服务会跟着某次终端会话一起消失。装好自启件后，用 `python switch_proxy.py --check` 确认服务与守护都在岗；不要靠一个 `Ctrl+C` 就结束的终端窗口长期供服务。Windows 启动夹 VBS（含本包 `service-examples/` 里的示例）给看门狗传了 `--lock-wait 86400`：登录时若旧看门狗还占着防重复锁，新副本会作为热备候补等待，旧看门狗一退出就零缝隙接管，不会「another watchdog already runs」后永久退出。
+**启动逻辑只有一条**：先起守护进程，由守护进程把服务拉起来。不要在启动脚本里直接 `python gateway/collector_proxy.py`——那样服务会跟着某次终端会话一起消失。装好自启件后，用 `python switch_proxy.py --check` 确认服务与守护都在岗；不要靠一个 `Ctrl+C` 就结束的终端窗口长期供服务。Windows 启动夹 VBS（含本包 `service-examples/` 里的示例）给看门狗传了 `--lock-wait 86400`：登录时若旧看门狗还占着防重复锁，新副本会作为热备候补等待，旧看门狗一退出就零缝隙接管，不会「another watchdog already runs」后永久退出。
 
 **为什么 Windows 要用快捷方式**：VBS 按「自己所在目录」去找 `ledger_watchdog.py`；直接把 VBS 复制进启动夹，目录就变成启动夹，主程序找不到且不报错、静默不启动。快捷方式不改变脚本的真实路径，所以能正确定位。目标机若 Python 不在 PATH，设用户环境变量 `TOKEN_LEDGER_PYTHON` 指向 `python.exe` 全路径。
 
@@ -128,14 +128,14 @@ python bootstrap.py --selftest
 
 工具按 API key 的**指纹**（一串 8 位十六进制）归到人，配置里不存原始 key。
 
-1. 算指纹：`python collector_proxy.py --fp <你的key>`
+1. 算指纹：`python gateway/collector_proxy.py --fp <你的key>`
 2. 把结果填进 `config.json` 的 `key_labels`，比如：
 
 ```json
 "key_labels": { "01234567": "张三", "abcdef01": "李四" }
 ```
 
-**示例指纹是虚构的**，请用 `python collector_proxy.py --fp <你的key>` 实算后再填；本包不附带任何真实 key 指纹或成员姓名。
+**示例指纹是虚构的**，请用 `python gateway/collector_proxy.py --fp <你的key>` 实算后再填；本包不附带任何真实 key 指纹或成员姓名。
 
 3. 改完不用重启，下一笔请求就按新名字记。
 
@@ -160,9 +160,9 @@ python bootstrap.py --selftest
 想手动重出某一天 / 刷新网页报表：
 
 ```
-python daily_report.py --config config.json --day 2026-11-05
-python daily_report.py --config config.json --all
-python html_report.py --config config.json --all
+python reporting/daily_report.py --config config.json --day 2026-11-05
+python reporting/daily_report.py --config config.json --all
+python reporting/html_report.py --config config.json --all
 ```
 
 第一条出指定那天的 `.md` 日报，第二条补齐全部 `.md` 日报，第三条生成/刷新网页报表（`usage-report.html` + `usage-data.js`）。只有第三条会产出网页报表，想看最新数据就重跑它。新增的 `fp` 字段不影响日报与网页报表的出表逻辑，它们仍按 `key` 分组。
@@ -182,7 +182,7 @@ python html_report.py --config config.json --all
 3. 用团队真实的接入地址发一轮对话，`data/requests-今天.jsonl` 多出一行，里面有正确的 `key`（姓名）、`fp`（8 位码）、`prompt`、`gen`。
 4. 发一个流式请求，第一块数据应立刻到达（不是等生成完才一起出来）。
 5. `http://<本机IP>:<端口>/ext.json` 能看到全部显卡（每张卡带唯一身份码和显存/编解码利用率）；打开 `http://<本机IP>:<端口>/monitor` 能看到卡片，**每张显卡的波形跟这张卡绑死**——机器重启、槽位号变了也不会把 A 卡的曲线画到 B 卡上。
-6. 出日报与网页报表是**两条独立命令**：`python daily_report.py --config config.json --all` 出 `.md` 日报、`python html_report.py --config config.json --all` 出网页报表；网页报表不会自动生成。
+6. 出日报与网页报表是**两条独立命令**：`python reporting/daily_report.py --config config.json --all` 出 `.md` 日报、`python reporting/html_report.py --config config.json --all` 出网页报表；网页报表不会自动生成。
 7. `python switch_proxy.py --check`：此刻若有人在跑任务，它必须显示拒绝。
 8. **部署后自检**：装好 `service-examples/` 自启件后，**关掉启动它的终端 / 结束启动会话**，`/health` 仍返回 200、`/ext.json` 仍返回双卡数据。若任一不可用，说明服务还挂在会话上，别交付使用。
 
@@ -249,8 +249,8 @@ python html_report.py --config config.json --all
 | 换版本 / 重启服务 | **只能**用 `python switch_proxy.py`；它只停旧进程、唤醒守护进程拉新进程，不会自己起服务 |
 | 改守护间隔 | 直接改 `config.json` 的 `watchdog_interval_s`，每轮重读，不用重启 |
 | 改人名映射 | 直接改 `key_labels`，下一笔生效 |
-| 手动补日报 | `python daily_report.py --config config.json --all` |
-| 手动生成 / 刷新网页报表 | `python html_report.py --config config.json --all`（不自动跑，改了数据要重跑） |
+| 手动补日报 | `python reporting/daily_report.py --config config.json --all` |
+| 手动生成 / 刷新网页报表 | `python reporting/html_report.py --config config.json --all`（不自动跑，改了数据要重跑） |
 | 改代码后验证 | `python bootstrap.py --selftest` |
 
 守护进程每 5 秒探一次端口，掉了立刻补岗；切换工具会碰一个「立即补岗」标记，让它不用等下一轮。
