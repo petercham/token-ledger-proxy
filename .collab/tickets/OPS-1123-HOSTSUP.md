@@ -1,4 +1,4 @@
- OPS-1123-HOSTSUP 看门狗管辖收缩：ComfyUI 侧只管面门门
+﻿ OPS-1123-HOSTSUP 看门狗管辖收缩：ComfyUI 侧只管面门门
 Status: 实施中（用户 2026-11-23 裁示，配奔对方仓 TK-F-20261123-2）
 
 【裁示】
@@ -20,3 +20,5 @@ guard_services 里 comfyui-full/comfy-tv 两条把 ComfyUI 分段网关的编排
 清单实例级顺序剥离（wait_for 强制清空）。看门狗唯一自调的分步 = 类型级安全启动：
 comfyui 族条目 wait_for 注入引擎端口（8787）+ stabilize≥60s；LLM 族内部不动。
 config.json 每周期重读，改动即时生效。
+
+【跨域工单登记】EXT-2026-11-23-百工插件面单缺陷-v1 已落盘本包 .collab／decisions／EXT-2026-11-23-baigong-plugin-defects-v1.md（八字段形制·钉值当轮现取·状态＝已登记待发投递）。

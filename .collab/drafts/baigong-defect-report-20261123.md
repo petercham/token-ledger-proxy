@@ -37,3 +37,7 @@ Author identity unknown 失败，无引导。
 - hooks 补丁备份：plugins/.../hooks/hooks.json.bak-relpath（两处）
 - 本面票：.collab/tickets/OPS-1123-HOSTSUP.md（治理全记录）
 - 跨面事故登记：comfy-split-gateway/.collab/decisions/2026-11-23-watchlist-contract.md
+
+
+---
+作废声明（同日）：本件为不成形制的工作稿（证据仅裸路径、无钉值成对、无效力域声明），已由 EXT-2026-11-23-百工插件面单缺陷-v1（落位 .collab／decisions／EXT-2026-11-23-baigong-plugin-defects-v1.md）取代。内容真源以 EXT 件为准。
